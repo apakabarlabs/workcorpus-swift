@@ -1,4 +1,5 @@
 [![Tests](https://github.com/apakabarlabs/workcorpus-swift/actions/workflows/tests.yml/badge.svg)](https://github.com/apakabarlabs/workcorpus-swift/actions/workflows/tests.yml)
+[![Documentation](https://github.com/apakabarlabs/workcorpus-swift/actions/workflows/documentation.yml/badge.svg)](https://apakabarlabs.github.io/workcorpus-swift/documentation/workcorpus/)
 # workcorpus-swift
 
 Reads the work a reading exercise is built on: its text, how it is divided, and
@@ -33,3 +34,16 @@ let work = try WorkCorpus.decodeWork(yaml)
 let piece = work.pieces[0]
 let firstBlock = piece.cuts(for: .block)[0]
 ```
+
+## Documentation
+
+The [Swift-DocC API reference](https://apakabarlabs.github.io/workcorpus-swift/documentation/workcorpus/)
+is generated from the public API on every push to `main`.
+
+## Lines of Code
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset=".github/loc-history-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset=".github/loc-history-light.svg">
+  <img src=".github/loc-history.svg" alt="Lines of code over time">
+</picture>
