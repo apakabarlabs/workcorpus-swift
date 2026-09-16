@@ -36,40 +36,44 @@ struct WorkSection: Decodable {
 
 struct WorkPiece: Decodable {
     let id: String
+    let title: String
     let lines: [String]
+    let cuts: [String: [Int]]?
 }
 
-extension SonnetCorpus {
+extension WorkCorpus {
     public enum WorkError: LocalizedError, Equatable {
-        case pieceIsNotASonnet(String)
+        case pieceIsNotNumbered(String)
 
         public var errorDescription: String? {
             switch self {
-            case .pieceIsNotASonnet(let id):
-                "The work calls a piece \(id), which is not a sonnet number."
+            case .pieceIsNotNumbered(let id):
+                "The work calls a piece \(id), which is not a number."
             }
         }
     }
 
-    public static func decodeWork(_ yaml: String) throws -> SonnetBook {
-        let book = try assembleWork(yaml)
-        try validate(book.sonnets)
-        try validateConfiguration(book)
-        return book
+    public static func decodeWork(_ yaml: String) throws -> Work {
+        let work = try assembleWork(yaml)
+        try validate(work.pieces)
+        try validateConfiguration(work)
+        return work
     }
 
-    static func assembleWork(_ yaml: String) throws -> SonnetBook {
+    static func assembleWork(_ yaml: String) throws -> Work {
         let work = try YAMLDecoder().decode(WorkFile.self, from: yaml)
         var pieces: [HeldPiece] = []
         for part in parts(of: work.sections) {
             for piece in part.pieces ?? [] {
                 guard let number = Int(piece.id) else {
-                    throw WorkError.pieceIsNotASonnet(piece.id)
+                    throw WorkError.pieceIsNotNumbered(piece.id)
                 }
                 pieces.append(
                     HeldPiece(
                         number: number,
+                        title: piece.title,
                         lines: piece.lines,
+                        cutSizes: piece.cuts ?? [:],
                         partTitle: part.title,
                         partShort: part.short,
                         partSummary: part.summary ?? ""
@@ -86,7 +90,7 @@ extension SonnetCorpus {
                 difficultWordScore: work.reading.difficultWordScore,
                 shortestAttemptSeconds: work.reading.shortestAttemptSeconds,
                 free: try work.reading.free.map { number in
-                    guard let free = Int(number) else { throw WorkError.pieceIsNotASonnet(number) }
+                    guard let free = Int(number) else { throw WorkError.pieceIsNotNumbered(number) }
                     return free
                 }
             )

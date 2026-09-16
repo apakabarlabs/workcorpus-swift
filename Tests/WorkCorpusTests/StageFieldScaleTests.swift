@@ -1,6 +1,6 @@
 import Foundation
 import Testing
-@testable import SonnetCorpus
+@testable import WorkCorpus
 
 struct StageFieldScaleTests {
     private let scale = StageFieldScale(untouchedBelow: 0.001, begunBelow: 0.5, mostBelow: 1.0)

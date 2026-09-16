@@ -2,10 +2,10 @@
 import PackageDescription
 
 let package = Package(
-    name: "SonnetCorpus",
+    name: "WorkCorpus",
     platforms: [.iOS(.v17), .macOS(.v14)],
     products: [
-        .library(name: "SonnetCorpus", targets: ["SonnetCorpus"])
+        .library(name: "WorkCorpus", targets: ["WorkCorpus"])
     ],
     dependencies: [
         .package(url: "https://github.com/apakabarlabs/readaloudkit-swift", from: "0.1.0"),
@@ -13,15 +13,15 @@ let package = Package(
     ],
     targets: [
         .target(
-            name: "SonnetCorpus",
+            name: "WorkCorpus",
             dependencies: [
                 .product(name: "ReadAloudKit", package: "readaloudkit-swift"),
                 "Yams"
             ]),
         .testTarget(
-            name: "SonnetCorpusTests",
+            name: "WorkCorpusTests",
             dependencies: [
-                "SonnetCorpus",
+                "WorkCorpus",
                 .product(name: "ReadAloudKit", package: "readaloudkit-swift")
             ])
     ]

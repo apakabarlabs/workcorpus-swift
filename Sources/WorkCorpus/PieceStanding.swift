@@ -1,6 +1,7 @@
 import ReadAloudKit
 
-public struct SonnetProgress: Equatable, Sendable {
+/// How far a reader has come through one piece: where each stage of the drill stands.
+public struct PieceStanding: Equatable, Sendable {
     public let stages: [StageState]
 
     public init(stages: [StageState]) {
@@ -22,5 +23,5 @@ public struct SonnetProgress: Equatable, Sendable {
     public var isComplete: Bool { stages.contains(.complete) }
     public var isStarted: Bool { stages.contains { $0 != .untouched } }
 
-    public static let untouched = SonnetProgress(stages: [])
+    public static let untouched = PieceStanding(stages: [])
 }

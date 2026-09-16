@@ -1,6 +1,7 @@
 import Foundation
 
-public struct SonnetGroup: Decodable, Identifiable, Sendable, Equatable {
+/// A run of pieces a work is divided into: a group of sonnets, a chapter, an act.
+public struct Part: Decodable, Identifiable, Sendable, Equatable {
     public let title: String
     public let summary: String
     public let first: Int
@@ -9,11 +10,11 @@ public struct SonnetGroup: Decodable, Identifiable, Sendable, Equatable {
 
     public var shortTitle: String { short ?? title }
 
-    public var sonnets: ClosedRange<Int> { first...last }
+    public var pieces: ClosedRange<Int> { first...last }
 
     public var id: Int { first }
 
-    public func contains(sonnet: Int) -> Bool { sonnets.contains(sonnet) }
+    public func contains(piece: Int) -> Bool { pieces.contains(piece) }
 
     public init(title: String, summary: String, first: Int, last: Int, short: String? = nil) {
         self.title = title
@@ -24,8 +25,8 @@ public struct SonnetGroup: Decodable, Identifiable, Sendable, Equatable {
     }
 }
 
-extension SonnetCorpus {
-    public static func group(of sonnet: Int, in groups: [SonnetGroup]) -> SonnetGroup? {
-        groups.first { $0.contains(sonnet: sonnet) }
+extension WorkCorpus {
+    public static func part(of piece: Int, in parts: [Part]) -> Part? {
+        parts.first { $0.contains(piece: piece) }
     }
 }

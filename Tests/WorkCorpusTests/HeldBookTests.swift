@@ -1,6 +1,6 @@
 import Foundation
 import Testing
-@testable import SonnetCorpus
+@testable import WorkCorpus
 
 struct HeldBookTests {
     private let reading = HeldReading(
@@ -9,12 +9,13 @@ struct HeldBookTests {
         mostBelow: 1.0,
         difficultWordScore: 3,
         shortestAttemptSeconds: 0.2,
-        free: [1, 18]
+        free: [1, 2]
     )
 
     private let pieces = [
         HeldPiece(
             number: 1,
+            title: "Sonnet 1",
             lines: ["From fairest creatures we desire increase,"],
             partTitle: "The Procreation Sonnets",
             partShort: "The Procreation",
@@ -22,6 +23,7 @@ struct HeldBookTests {
         ),
         HeldPiece(
             number: 2,
+            title: "Sonnet 2",
             lines: ["When forty winters shall besiege thy brow,"],
             partTitle: "The Procreation Sonnets",
             partShort: "The Procreation",
@@ -29,6 +31,7 @@ struct HeldBookTests {
         ),
         HeldPiece(
             number: 3,
+            title: "Sonnet 3",
             lines: ["Look in thy glass and tell the face thou viewest"],
             partTitle: "The Fair Youth",
             partShort: nil,
@@ -36,33 +39,34 @@ struct HeldBookTests {
         ),
     ]
 
-    @Test("the sonnets come out numbered and in the order they are held")
-    func sonnets() throws {
-        let book = SonnetCorpus.assemble(pieces: pieces, reading: reading)
+    @Test("the pieces come out numbered and in the order they are held")
+    func heldPieces() throws {
+        let work = WorkCorpus.assemble(pieces: pieces, reading: reading)
 
-        #expect(book.sonnets.map(\.number) == [1, 2, 3])
-        #expect(book.sonnets[1].lines == ["When forty winters shall besiege thy brow,"])
+        #expect(work.pieces.map(\.number) == [1, 2, 3])
+        #expect(work.pieces[1].lines == ["When forty winters shall besiege thy brow,"])
+        #expect(work.pieces[1].title == "Sonnet 2")
     }
 
-    @Test("a part covers the sonnets filed under it and keeps its two names")
+    @Test("a part covers the pieces filed under it and keeps its two names")
     func parts() throws {
-        let book = SonnetCorpus.assemble(pieces: pieces, reading: reading)
+        let work = WorkCorpus.assemble(pieces: pieces, reading: reading)
 
-        #expect(book.groups.map(\.title) == ["The Procreation Sonnets", "The Fair Youth"])
-        #expect(book.groups[0].shortTitle == "The Procreation")
-        #expect(book.groups[0].sonnets == 1...2)
-        #expect(book.groups[1].shortTitle == "The Fair Youth")
-        #expect(book.groups[1].sonnets == 3...3)
+        #expect(work.parts.map(\.title) == ["The Procreation Sonnets", "The Fair Youth"])
+        #expect(work.parts[0].shortTitle == "The Procreation")
+        #expect(work.parts[0].pieces == 1...2)
+        #expect(work.parts[1].shortTitle == "The Fair Youth")
+        #expect(work.parts[1].pieces == 3...3)
     }
 
     @Test("the numbers the drill reads come off the reading it was given")
     func thresholds() throws {
-        let book = SonnetCorpus.assemble(pieces: pieces, reading: reading)
+        let work = WorkCorpus.assemble(pieces: pieces, reading: reading)
 
-        #expect(book.free == [1, 18])
-        #expect(book.stageField.band(for: 0.0005) == .untouched)
-        #expect(book.difficultWords.scoreThreshold == 3)
-        #expect(book.listening.shortestAttemptSeconds == 0.2)
+        #expect(work.free == [1, 2])
+        #expect(work.stageField.band(for: 0.0005) == .untouched)
+        #expect(work.difficultWords.scoreThreshold == 3)
+        #expect(work.listening.shortestAttemptSeconds == 0.2)
     }
 
     @Test("a part interrupted and taken up again is two parts, not one spanning the gap")
@@ -70,6 +74,7 @@ struct HeldBookTests {
         let returning = pieces + [
             HeldPiece(
                 number: 4,
+                title: "Sonnet 4",
                 lines: ["Unthrifty loveliness, why dost thou spend"],
                 partTitle: "The Procreation Sonnets",
                 partShort: "The Procreation",
@@ -77,15 +82,17 @@ struct HeldBookTests {
             ),
         ]
 
-        let book = SonnetCorpus.assemble(pieces: returning, reading: reading)
+        let work = WorkCorpus.assemble(pieces: returning, reading: reading)
 
-        #expect(book.groups.map(\.sonnets) == [1...2, 3...3, 4...4])
+        #expect(work.parts.map(\.pieces) == [1...2, 3...3, 4...4])
     }
 
-    @Test("a held book short of the sequence is refused by the rules the file is held to")
+    @Test("a work whose pieces are out of order is refused")
     func heldToTheSameRules() throws {
-        #expect(throws: SonnetCorpus.CorpusError.wrongSonnetCount(3)) {
-            try SonnetCorpus.book(pieces: pieces, reading: reading)
+        let outOfOrder = [pieces[1], pieces[0], pieces[2]]
+
+        #expect(throws: WorkCorpus.CorpusError.outOfOrder(expected: 1, found: 2)) {
+            try WorkCorpus.work(pieces: outOfOrder, reading: reading)
         }
     }
 }

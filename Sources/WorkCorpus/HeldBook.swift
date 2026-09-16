@@ -2,14 +2,26 @@ import Foundation
 
 public struct HeldPiece: Sendable {
     public let number: Int
+    public let title: String
     public let lines: [String]
+    public let cutSizes: [String: [Int]]
     public let partTitle: String
     public let partShort: String?
     public let partSummary: String
 
-    public init(number: Int, lines: [String], partTitle: String, partShort: String?, partSummary: String) {
+    public init(
+        number: Int,
+        title: String,
+        lines: [String],
+        cutSizes: [String: [Int]] = [:],
+        partTitle: String,
+        partShort: String?,
+        partSummary: String
+    ) {
         self.number = number
+        self.title = title
         self.lines = lines
+        self.cutSizes = cutSizes
         self.partTitle = partTitle
         self.partShort = partShort
         self.partSummary = partSummary
@@ -41,16 +53,16 @@ public struct HeldReading: Sendable {
     }
 }
 
-extension SonnetCorpus {
-    public static func book(pieces: [HeldPiece], reading: HeldReading) throws -> SonnetBook {
-        let book = assemble(pieces: pieces, reading: reading)
-        try validate(book.sonnets)
-        try validateConfiguration(book)
-        return book
+extension WorkCorpus {
+    public static func work(pieces: [HeldPiece], reading: HeldReading) throws -> Work {
+        let work = assemble(pieces: pieces, reading: reading)
+        try validate(work.pieces)
+        try validateConfiguration(work)
+        return work
     }
 
-    static func assemble(pieces: [HeldPiece], reading: HeldReading) -> SonnetBook {
-        struct Part {
+    static func assemble(pieces: [HeldPiece], reading: HeldReading) -> Work {
+        struct OpenPart {
             let title: String
             let short: String?
             let summary: String
@@ -58,13 +70,13 @@ extension SonnetCorpus {
             var last: Int
         }
 
-        var parts: [Part] = []
+        var parts: [OpenPart] = []
         for piece in pieces {
             if var open = parts.last, open.title == piece.partTitle, open.last + 1 == piece.number {
                 open.last = piece.number
                 parts[parts.count - 1] = open
             } else {
-                parts.append(Part(
+                parts.append(OpenPart(
                     title: piece.partTitle,
                     short: piece.partShort,
                     summary: piece.partSummary,
@@ -74,10 +86,12 @@ extension SonnetCorpus {
             }
         }
 
-        return SonnetBook(
-            sonnets: pieces.map { Sonnet(number: $0.number, lines: $0.lines) },
-            groups: parts.map {
-                SonnetGroup(title: $0.title, summary: $0.summary, first: $0.first, last: $0.last, short: $0.short)
+        return Work(
+            pieces: pieces.map {
+                Piece(number: $0.number, title: $0.title, lines: $0.lines, cutSizes: $0.cutSizes)
+            },
+            parts: parts.map {
+                Part(title: $0.title, summary: $0.summary, first: $0.first, last: $0.last, short: $0.short)
             },
             free: reading.free,
             stageField: StageFieldScale(
