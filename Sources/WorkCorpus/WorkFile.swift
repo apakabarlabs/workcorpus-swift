@@ -30,7 +30,7 @@ struct WorkSection: Decodable {
     let title: String
     let short: String?
     let summary: String?
-    let sections: [WorkSection]?
+    let sections: [Self]?
     let pieces: [WorkPiece]?
 }
 
@@ -73,10 +73,10 @@ extension WorkCorpus {
                         number: number,
                         title: piece.title,
                         lines: piece.lines,
-                        cutSizes: piece.cuts ?? [:],
                         partTitle: part.title,
                         partShort: part.short,
-                        partSummary: part.summary ?? ""
+                        partSummary: part.summary ?? "",
+                        cutSizes: piece.cuts ?? [:]
                     )
                 )
             }

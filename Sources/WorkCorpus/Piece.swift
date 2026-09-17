@@ -43,7 +43,7 @@ public enum WorkCorpus {
 
         public var errorDescription: String? {
             switch self {
-            case .outOfOrder(let expected, let found):
+            case let .outOfOrder(expected, found):
                 return "Expected piece \(expected), found \(found)."
             }
         }

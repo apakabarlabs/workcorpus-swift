@@ -34,18 +34,21 @@ public struct PieceAsset: Sendable {
     private static func slug(_ text: String) -> String {
         let wordsWorthReadingInAFileName = 8
         let letters = String(text.lowercased().map { $0.isLetter || $0.isNumber ? $0 : " " })
-        return letters.split(separator: " ").prefix(wordsWorthReadingInAFileName).joined(separator: "-")
+        return letters.split(separator: " ").prefix(wordsWorthReadingInAFileName).joined(
+            separator: "-"
+        )
     }
 
     public func number(inName name: String) -> Int? {
-        let withoutExtension = (name as NSString).deletingPathExtension
+        let withoutExtension = URL(fileURLWithPath: name).deletingPathExtension().lastPathComponent
         guard withoutExtension.hasPrefix("\(stem)-") else { return nil }
-        return Int(withoutExtension.dropFirst(stem.count + 1).prefix { $0.isNumber })
+        return Int(withoutExtension.dropFirst(stem.count + 1).prefix(while: \.isNumber))
     }
 
     public func voice(inName name: String) -> NarrationVoice? {
-        let withoutExtension = (name as NSString).deletingPathExtension
-        guard let dash = withoutExtension.lastIndex(of: "-"), dash != withoutExtension.startIndex else {
+        let withoutExtension = URL(fileURLWithPath: name).deletingPathExtension().lastPathComponent
+        guard let dash = withoutExtension.lastIndex(of: "-"), dash != withoutExtension.startIndex
+        else {
             return nil
         }
         let tail = String(withoutExtension[withoutExtension.index(after: dash)...])

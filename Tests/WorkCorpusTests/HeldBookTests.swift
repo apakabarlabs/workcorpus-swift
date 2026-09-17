@@ -1,5 +1,6 @@
 import Foundation
 import Testing
+
 @testable import WorkCorpus
 
 struct HeldBookTests {
@@ -36,11 +37,11 @@ struct HeldBookTests {
             partTitle: "The Fair Youth",
             partShort: nil,
             partSummary: "The poet writes to the young man."
-        ),
+        )
     ]
 
     @Test("the pieces come out numbered and in the order they are held")
-    func heldPieces() throws {
+    func heldPieces() {
         let work = WorkCorpus.assemble(pieces: pieces, reading: reading)
 
         #expect(work.pieces.map(\.number) == [1, 2, 3])
@@ -49,7 +50,7 @@ struct HeldBookTests {
     }
 
     @Test("a part covers the pieces filed under it and keeps its two names")
-    func parts() throws {
+    func parts() {
         let work = WorkCorpus.assemble(pieces: pieces, reading: reading)
 
         #expect(work.parts.map(\.title) == ["The Procreation Sonnets", "The Fair Youth"])
@@ -60,7 +61,7 @@ struct HeldBookTests {
     }
 
     @Test("the numbers the drill reads come off the reading it was given")
-    func thresholds() throws {
+    func thresholds() {
         let work = WorkCorpus.assemble(pieces: pieces, reading: reading)
 
         #expect(work.free == [1, 2])
@@ -70,17 +71,18 @@ struct HeldBookTests {
     }
 
     @Test("a part interrupted and taken up again is two parts, not one spanning the gap")
-    func partsAreRunsRatherThanNames() throws {
-        let returning = pieces + [
-            HeldPiece(
-                number: 4,
-                title: "Sonnet 4",
-                lines: ["Unthrifty loveliness, why dost thou spend"],
-                partTitle: "The Procreation Sonnets",
-                partShort: "The Procreation",
-                partSummary: "Marry, and let your beauty outlive you."
-            ),
-        ]
+    func partsAreRunsRatherThanNames() {
+        let returning =
+            pieces + [
+                HeldPiece(
+                    number: 4,
+                    title: "Sonnet 4",
+                    lines: ["Unthrifty loveliness, why dost thou spend"],
+                    partTitle: "The Procreation Sonnets",
+                    partShort: "The Procreation",
+                    partSummary: "Marry, and let your beauty outlive you."
+                )
+            ]
 
         let work = WorkCorpus.assemble(pieces: returning, reading: reading)
 

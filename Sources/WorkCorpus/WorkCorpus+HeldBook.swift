@@ -13,10 +13,10 @@ public struct HeldPiece: Sendable {
         number: Int,
         title: String,
         lines: [String],
-        cutSizes: [String: [Int]] = [:],
         partTitle: String,
         partShort: String?,
-        partSummary: String
+        partSummary: String,
+        cutSizes: [String: [Int]] = [:]
     ) {
         self.number = number
         self.title = title
@@ -54,6 +54,14 @@ public struct HeldReading: Sendable {
 }
 
 extension WorkCorpus {
+    private struct OpenPart {
+        let title: String
+        let short: String?
+        let summary: String
+        let first: Int
+        var last: Int
+    }
+
     public static func work(pieces: [HeldPiece], reading: HeldReading) throws -> Work {
         let work = assemble(pieces: pieces, reading: reading)
         try validate(work.pieces)
@@ -62,37 +70,10 @@ extension WorkCorpus {
     }
 
     static func assemble(pieces: [HeldPiece], reading: HeldReading) -> Work {
-        struct OpenPart {
-            let title: String
-            let short: String?
-            let summary: String
-            let first: Int
-            var last: Int
-        }
-
-        var parts: [OpenPart] = []
-        for piece in pieces {
-            if var open = parts.last, open.title == piece.partTitle, open.last + 1 == piece.number {
-                open.last = piece.number
-                parts[parts.count - 1] = open
-            } else {
-                parts.append(OpenPart(
-                    title: piece.partTitle,
-                    short: piece.partShort,
-                    summary: piece.partSummary,
-                    first: piece.number,
-                    last: piece.number
-                ))
-            }
-        }
-
+        let parts = assembleParts(pieces: pieces)
         return Work(
-            pieces: pieces.map {
-                Piece(number: $0.number, title: $0.title, lines: $0.lines, cutSizes: $0.cutSizes)
-            },
-            parts: parts.map {
-                Part(title: $0.title, summary: $0.summary, first: $0.first, last: $0.last, short: $0.short)
-            },
+            pieces: pieces.map(makePiece),
+            parts: parts.map(makePart),
             free: reading.free,
             stageField: StageFieldScale(
                 untouchedBelow: reading.untouchedBelow,
@@ -101,6 +82,46 @@ extension WorkCorpus {
             ),
             difficultWords: DifficultWordsConfiguration(scoreThreshold: reading.difficultWordScore),
             listening: ListeningThresholds(shortestAttemptSeconds: reading.shortestAttemptSeconds)
+        )
+    }
+
+    private static func assembleParts(pieces: [HeldPiece]) -> [OpenPart] {
+        var parts: [OpenPart] = []
+        for piece in pieces {
+            if var open = parts.last, open.title == piece.partTitle, open.last + 1 == piece.number {
+                open.last = piece.number
+                parts[parts.count - 1] = open
+            } else {
+                parts.append(
+                    OpenPart(
+                        title: piece.partTitle,
+                        short: piece.partShort,
+                        summary: piece.partSummary,
+                        first: piece.number,
+                        last: piece.number
+                    )
+                )
+            }
+        }
+        return parts
+    }
+
+    private static func makePiece(_ piece: HeldPiece) -> Piece {
+        Piece(
+            number: piece.number,
+            title: piece.title,
+            lines: piece.lines,
+            cutSizes: piece.cutSizes
+        )
+    }
+
+    private static func makePart(_ part: OpenPart) -> Part {
+        Part(
+            title: part.title,
+            summary: part.summary,
+            first: part.first,
+            last: part.last,
+            short: part.short
         )
     }
 }

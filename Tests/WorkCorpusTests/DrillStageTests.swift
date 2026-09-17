@@ -1,5 +1,6 @@
 import Foundation
 import Testing
+
 @testable import WorkCorpus
 
 struct DrillStageTests {
@@ -40,9 +41,21 @@ struct DrillStageTests {
 
     @Test("a stage is cut the way the work says it is cut")
     func theWorkSaysHowItIsCut() {
-        #expect(piece(1, lines: 14, cuts: ["block": [4, 4, 4, 2]]).cuts(for: .block).map(\.count) == [4, 4, 4, 2])
-        #expect(piece(99, lines: 15, cuts: ["block": [5, 4, 4, 2]]).cuts(for: .block).map(\.count) == [5, 4, 4, 2])
-        #expect(piece(126, lines: 12, cuts: ["block": [4, 4, 4]]).cuts(for: .block).map(\.count) == [4, 4, 4])
+        #expect(
+            piece(1, lines: 14, cuts: ["block": [4, 4, 4, 2]]).cuts(for: .block).map(\.count) == [
+                4, 4, 4, 2
+            ]
+        )
+        #expect(
+            piece(99, lines: 15, cuts: ["block": [5, 4, 4, 2]]).cuts(for: .block).map(\.count) == [
+                5, 4, 4, 2
+            ]
+        )
+        #expect(
+            piece(126, lines: 12, cuts: ["block": [4, 4, 4]]).cuts(for: .block).map(\.count) == [
+                4, 4, 4
+            ]
+        )
     }
 
     @Test("a stage the work says nothing about is read line by line")
@@ -52,7 +65,9 @@ struct DrillStageTests {
 
     @Test("lines past the last cut are not dropped")
     func nothingIsLeftBehindTheLastCut() {
-        #expect(piece(1, lines: 14, cuts: ["block": [4, 4]]).cuts(for: .block).map(\.count) == [4, 4, 6])
+        #expect(
+            piece(1, lines: 14, cuts: ["block": [4, 4]]).cuts(for: .block).map(\.count) == [4, 4, 6]
+        )
     }
 
     @Test("both stages are offered, and the whole piece is in each")

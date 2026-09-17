@@ -1,4 +1,5 @@
 import Testing
+
 @testable import WorkCorpus
 
 struct WorkTests {
@@ -55,7 +56,9 @@ struct WorkTests {
         free: [Int] = [1],
         shortestAttempt: Double = 0.2
     ) -> Work {
-        let pieces = (1...20).map { Piece(number: $0, title: "Piece \($0)", lines: ["A line of verse,"]) }
+        let pieces = (1...20).map { number in
+            Piece(number: number, title: "Piece \(number)", lines: ["A line of verse,"])
+        }
         return Work(
             pieces: pieces,
             parts: parts ?? [Part(title: "The work", summary: "", first: 1, last: pieces.count)],

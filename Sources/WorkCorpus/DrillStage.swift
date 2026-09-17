@@ -1,15 +1,15 @@
 import Foundation
 
 public enum DrillStage: Int, CaseIterable, Identifiable, Sendable {
-    case line
-    case block
+    case line = 0
+    case block = 1
 
     public var id: Int { rawValue }
 
     public var label: String {
         switch self {
-        case .line: return "line"
         case .block: return "block"
+        case .line: return "line"
         }
     }
 }

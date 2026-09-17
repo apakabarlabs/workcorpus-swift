@@ -1,5 +1,6 @@
 import Foundation
 import Testing
+
 @testable import WorkCorpus
 
 struct WorkCorpusTests {
@@ -42,7 +43,11 @@ struct WorkCorpusTests {
 
     @Test("a piece hands its lines to the reading mechanics unchanged")
     func exposesPassage() {
-        let piece = Piece(number: 1, title: "Sonnet 1", lines: ["From fairest creatures we desire increase,"])
+        let piece = Piece(
+            number: 1,
+            title: "Sonnet 1",
+            lines: ["From fairest creatures we desire increase,"]
+        )
 
         #expect(piece.passage.lines == piece.lines)
     }

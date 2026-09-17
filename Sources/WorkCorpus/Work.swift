@@ -43,12 +43,16 @@ extension WorkCorpus {
             switch self {
             case .partsDoNotCoverTheWork:
                 "The parts do not cover the work exactly once."
+
             case .invalidFreePieces:
                 "The list of pieces free to read is empty, repeated, or outside the work."
+
             case .invalidStageFieldScale:
                 "The stage field bounds are not increasing values between zero and one."
+
             case .invalidDifficultWordThreshold:
                 "The difficult-word score threshold must be positive."
+
             case .invalidListeningThresholds:
                 "The shortest attempt must be a positive number of seconds, shorter than a line."
             }
@@ -74,15 +78,16 @@ extension WorkCorpus {
 
         let free = Set(work.free)
         let numbered = 1...max(work.pieces.count, 1)
-        guard !free.isEmpty, free.count == work.free.count, free.allSatisfy(numbered.contains) else {
+        guard !free.isEmpty, free.count == work.free.count, free.allSatisfy(numbered.contains)
+        else {
             throw WorkShapeError.invalidFreePieces
         }
 
         let scale = work.stageField
-        guard 0 < scale.untouchedBelow,
-              scale.untouchedBelow < scale.begunBelow,
-              scale.begunBelow < scale.mostBelow,
-              scale.mostBelow <= 1
+        guard scale.untouchedBelow > 0,
+            scale.untouchedBelow < scale.begunBelow,
+            scale.begunBelow < scale.mostBelow,
+            scale.mostBelow <= 1
         else { throw WorkShapeError.invalidStageFieldScale }
 
         guard work.difficultWords.scoreThreshold > 0 else {
@@ -90,8 +95,8 @@ extension WorkCorpus {
         }
 
         let shorterThanAnyLine = 2.0
-        guard 0 < work.listening.shortestAttemptSeconds,
-              work.listening.shortestAttemptSeconds < shorterThanAnyLine
+        guard work.listening.shortestAttemptSeconds > 0,
+            work.listening.shortestAttemptSeconds < shorterThanAnyLine
         else {
             throw WorkShapeError.invalidListeningThresholds
         }
