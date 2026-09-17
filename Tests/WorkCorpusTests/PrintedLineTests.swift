@@ -6,14 +6,7 @@ import Testing
 
 struct PrintedLineTests {
     private func publishedPieces() throws -> [Piece] {
-        let server =
-            ProcessInfo.processInfo.environment["FLOWBOT"]
-            .map { URL(filePath: $0, directoryHint: .isDirectory) }
-            ?? URL.homeDirectory.appending(path: "Developer/flowbot")
-        let work =
-            server
-            .appending(path: "src/flowbot/shadowing/data/shakespeare-sonnets/work.yaml")
-        return try WorkCorpus.decodeWork(String(contentsOf: work, encoding: .utf8)).pieces
+        try WorkCorpus.decodeWork(workFixture()).pieces
     }
 
     @Test("no mark of any printed line is left standing alone")
