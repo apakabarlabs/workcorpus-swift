@@ -1,12 +1,23 @@
 import Foundation
 import Yams
 
+/// A reading work and the configuration used to present it.
+///
+/// Decode through ``WorkCorpus/decodeWork(_:)`` or
+/// ``WorkCorpus/decodeWorkFromBook(_:)`` to validate the complete work before use.
+/// Decoding this type directly does not validate relationships between its fields.
 public struct Work: Decodable, Sendable {
+    /// Reading pieces, expected to be numbered from one and ordered by number.
     public let pieces: [Piece]
+    /// Parts, expected to cover the pieces consecutively and exactly once.
     public let parts: [Part]
+    /// Piece numbers intended to be available without purchase.
     public let free: [Int]
+    /// Thresholds used to display stage progress.
     public let stageField: StageFieldScale
+    /// Threshold used to identify difficult words.
     public let difficultWords: DifficultWordsConfiguration
+    /// Time limits used while listening to attempts.
     public let listening: ListeningThresholds
 
     private enum CodingKeys: String, CodingKey {
@@ -19,13 +30,16 @@ public struct Work: Decodable, Sendable {
     }
 }
 
+/// Configuration for classifying repeatedly missed words.
 public struct DifficultWordsConfiguration: Decodable, Sendable {
+    /// Minimum accumulated score at which a word is difficult.
     public let scoreThreshold: Int
 
     private enum CodingKeys: String, CodingKey {
         case scoreThreshold = "score_threshold"
     }
 
+    /// Creates a threshold without validating it against a work.
     public init(scoreThreshold: Int) {
         self.scoreThreshold = scoreThreshold
     }
@@ -59,6 +73,7 @@ extension WorkCorpus {
         }
     }
 
+    /// Decodes an assembled book YAML document and validates the resulting work.
     public static func decodeWorkFromBook(_ yaml: String) throws -> Work {
         let work = try YAMLDecoder().decode(Work.self, from: yaml)
         try validate(work.pieces)

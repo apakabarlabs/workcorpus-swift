@@ -1,14 +1,23 @@
 import Foundation
 
+/// Piece and part values already held by a caller, before assembling a ``Work``.
 public struct HeldPiece: Sendable {
+    /// One-based piece number.
     public let number: Int
+    /// Piece title.
     public let title: String
+    /// Printed lines in reading order.
     public let lines: [String]
+    /// Per-stage sizes of consecutive line groups.
     public let cutSizes: [String: [Int]]
+    /// Full title of the containing part.
     public let partTitle: String
+    /// Optional compact title of the containing part.
     public let partShort: String?
+    /// Summary of the containing part.
     public let partSummary: String
 
+    /// Creates held values for one piece.
     public init(
         number: Int,
         title: String,
@@ -28,14 +37,22 @@ public struct HeldPiece: Sendable {
     }
 }
 
+/// Reading configuration already held by a caller before assembling a ``Work``.
 public struct HeldReading: Sendable {
+    /// Upper bound of the untouched progress band.
     public let untouchedBelow: Double
+    /// Upper bound of the begun progress band.
     public let begunBelow: Double
+    /// Upper bound of the mostly-complete progress band.
     public let mostBelow: Double
+    /// Difficult-word score threshold.
     public let difficultWordScore: Int
+    /// Upper duration, in seconds, that is still treated as an accidental tap.
     public let shortestAttemptSeconds: Double
+    /// Piece numbers available without purchase.
     public let free: [Int]
 
+    /// Creates held reading configuration.
     public init(
         untouchedBelow: Double,
         begunBelow: Double,
@@ -62,6 +79,7 @@ extension WorkCorpus {
         var last: Int
     }
 
+    /// Assembles held values into a work and validates its complete shape.
     public static func work(pieces: [HeldPiece], reading: HeldReading) throws -> Work {
         let work = assemble(pieces: pieces, reading: reading)
         try validate(work.pieces)

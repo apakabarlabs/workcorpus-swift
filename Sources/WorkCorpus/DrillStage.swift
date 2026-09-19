@@ -1,11 +1,16 @@
 import Foundation
 
+/// The size of text a reader must complete in one attempt.
 public enum DrillStage: Int, CaseIterable, Identifiable, Sendable {
+    /// One printed line per attempt.
     case line = 0
+    /// Work-defined groups of consecutive lines per attempt.
     case block = 1
 
+    /// Stable numeric identity of the stage.
     public var id: Int { rawValue }
 
+    /// Key used by a work's `cuts` table.
     public var label: String {
         switch self {
         case .block: return "block"

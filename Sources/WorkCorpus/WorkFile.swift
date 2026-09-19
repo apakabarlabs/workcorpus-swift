@@ -42,9 +42,12 @@ struct WorkPiece: Decodable {
 }
 
 extension WorkCorpus {
+    /// A work-file piece identifier is not an integer.
     public enum WorkError: LocalizedError, Equatable {
+        /// A piece or free-piece identifier cannot be converted to its number.
         case pieceIsNotNumbered(String)
 
+        /// Reader-facing description of the invalid identifier.
         public var errorDescription: String? {
             switch self {
             case .pieceIsNotNumbered(let id):
@@ -53,6 +56,7 @@ extension WorkCorpus {
         }
     }
 
+    /// Decodes a nested work-file YAML document and validates the resulting work.
     public static func decodeWork(_ yaml: String) throws -> Work {
         let work = try assembleWork(yaml)
         try validate(work.pieces)
