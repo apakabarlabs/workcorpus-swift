@@ -18,13 +18,15 @@ let package = Package(
             dependencies: [
                 .product(name: "ReadAloudKit", package: "readaloudkit-swift"),
                 "Yams"
-            ]),
+            ]
+        ),
         .testTarget(
             name: "WorkCorpusTests",
             dependencies: [
                 "WorkCorpus",
                 .product(name: "ReadAloudKit", package: "readaloudkit-swift")
             ],
-            resources: [.process("Fixtures")])
+            resources: [.process("Fixtures")]
+        )
     ]
 )

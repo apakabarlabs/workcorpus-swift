@@ -1,0 +1,4 @@
+documentation: https://apakabarlabs.github.io/workcorpus-swift/data/documentation/workcorpus.json
+
+skip:
+  - .build/
