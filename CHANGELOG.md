@@ -20,6 +20,17 @@
 
 ### Changed
 
+- `HeldPiece.init` takes `cutSizes` last, after the part it belongs to, so a
+  piece that is not cut can leave it out:
+
+  ```swift
+  // 0.2
+  HeldPiece(number: 1, title: "Sonnet 1", lines: lines, cutSizes: cuts,
+            partTitle: "Sonnets", partShort: nil, partSummary: "")
+  // 0.3
+  HeldPiece(number: 1, title: "Sonnet 1", lines: lines,
+            partTitle: "Sonnets", partShort: nil, partSummary: "", cutSizes: cuts)
+  ```
 - Decoding a work no longer throws for a missing or out-of-range
   `shortest_attempt_seconds`. A work file whose `reading` still carries that key,
   or a book that still has a `listening` mapping, is read as before, and those
