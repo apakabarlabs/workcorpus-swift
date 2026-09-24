@@ -8,6 +8,13 @@ struct WorkTests {
         try WorkCorpus.validateConfiguration(work())
     }
 
+    @Test("a book that still carries listening limits is read as before")
+    func olderBook() throws {
+        let book = try fixture("book-with-listening")
+
+        #expect(try WorkCorpus.decodeWorkFromBook(book).pieces.map(\.title) == ["First poem"])
+    }
+
     @Test("difficult words need a positive score threshold")
     func refusesInvalidDifficultWordThreshold() {
         #expect(throws: WorkCorpus.WorkShapeError.invalidDifficultWordThreshold) {
@@ -33,28 +40,10 @@ struct WorkTests {
         }
     }
 
-    @Test("an attempt has a length, and it is shorter than a line")
-    func refusesInvalidListeningThresholds() {
-        #expect(throws: WorkCorpus.WorkShapeError.invalidListeningThresholds) {
-            try WorkCorpus.validateConfiguration(work(shortestAttempt: 0))
-        }
-        #expect(throws: WorkCorpus.WorkShapeError.invalidListeningThresholds) {
-            try WorkCorpus.validateConfiguration(work(shortestAttempt: 200))
-        }
-    }
-
-    @Test("a tap is told from a line by its length")
-    func readsAttemptsAgainstTheThresholds() {
-        let thresholds = ListeningThresholds(shortestAttemptSeconds: 0.2)
-        #expect(thresholds.isAccidentalTap(seconds: 0.2))
-        #expect(!thresholds.isAccidentalTap(seconds: 0.21))
-    }
-
     private func work(
         threshold: Int = 3,
         parts: [Part]? = nil,
-        free: [Int] = [1],
-        shortestAttempt: Double = 0.2
+        free: [Int] = [1]
     ) -> Work {
         let pieces = (1...20).map { number in
             Piece(number: number, title: "Piece \(number)", lines: ["A line of verse,"])
@@ -64,8 +53,7 @@ struct WorkTests {
             parts: parts ?? [Part(title: "The work", summary: "", first: 1, last: pieces.count)],
             free: free,
             stageField: StageFieldScale(untouchedBelow: 0.001, begunBelow: 0.5, mostBelow: 1),
-            difficultWords: DifficultWordsConfiguration(scoreThreshold: threshold),
-            listening: ListeningThresholds(shortestAttemptSeconds: shortestAttempt)
+            difficultWords: DifficultWordsConfiguration(scoreThreshold: threshold)
         )
     }
 }

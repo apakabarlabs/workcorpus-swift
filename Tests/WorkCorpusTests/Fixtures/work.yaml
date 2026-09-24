@@ -6,7 +6,6 @@ reading:
   begun_below: 0.5
   most_below: 1.0
   difficult_word_score: 3
-  shortest_attempt_seconds: 0.2
   free:
     - '1'
     - '2'

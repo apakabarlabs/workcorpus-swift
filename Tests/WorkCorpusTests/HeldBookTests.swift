@@ -9,7 +9,6 @@ struct HeldBookTests {
         begunBelow: 0.5,
         mostBelow: 1.0,
         difficultWordScore: 3,
-        shortestAttemptSeconds: 0.2,
         free: [1, 2]
     )
 
@@ -67,7 +66,6 @@ struct HeldBookTests {
         #expect(work.free == [1, 2])
         #expect(work.stageField.band(for: 0.0005) == .untouched)
         #expect(work.difficultWords.scoreThreshold == 3)
-        #expect(work.listening.shortestAttemptSeconds == 0.2)
     }
 
     @Test("a part interrupted and taken up again is two parts, not one spanning the gap")

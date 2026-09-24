@@ -19,8 +19,8 @@ from disagreeing about what is written.
   is the work's own shape. A stage the work says nothing about is read line by
   line.
 - **A part**, a run of pieces the work is divided into.
-- **What a reading is held to**: the score a word counts as difficult at, the
-  shortest attempt worth checking, and the bands a stage is coloured by.
+- **What a reading is held to**: the score a word counts as difficult at and the
+  bands a stage is coloured by.
 - **A reader's standing** in the stages of one piece.
 
 What it does not hold is how long a piece should be, or how many pieces a work

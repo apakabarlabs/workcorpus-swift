@@ -13,7 +13,6 @@ struct WorkReading: Decodable {
     let begunBelow: Double
     let mostBelow: Double
     let difficultWordScore: Int
-    let shortestAttemptSeconds: Double
     let free: [String]
 
     private enum CodingKeys: String, CodingKey {
@@ -21,7 +20,6 @@ struct WorkReading: Decodable {
         case begunBelow = "begun_below"
         case mostBelow = "most_below"
         case difficultWordScore = "difficult_word_score"
-        case shortestAttemptSeconds = "shortest_attempt_seconds"
         case free
     }
 }
@@ -92,7 +90,6 @@ extension WorkCorpus {
                 begunBelow: work.reading.begunBelow,
                 mostBelow: work.reading.mostBelow,
                 difficultWordScore: work.reading.difficultWordScore,
-                shortestAttemptSeconds: work.reading.shortestAttemptSeconds,
                 free: try work.reading.free.map { number in
                     guard let free = Int(number) else { throw WorkError.pieceIsNotNumbered(number) }
                     return free

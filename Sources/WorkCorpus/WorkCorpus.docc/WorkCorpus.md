@@ -7,8 +7,8 @@ assets, and progress a reading application needs.
 
 Use ``WorkCorpus/decodeWork(_:)`` for the nested work-file format or
 ``WorkCorpus/decodeWorkFromBook(_:)`` for the assembled book format. Both entry
-points validate numbering, parts, free pieces, progress thresholds, and listening
-limits before returning a ``Work``.
+points validate numbering, parts, free pieces, and progress thresholds before
+returning a ``Work``.
 
 ```swift
 let work = try WorkCorpus.decodeWork(yaml)
@@ -27,7 +27,6 @@ reading:
   begun_below: 0.5
   most_below: 1.0
   difficult_word_score: 3
-  shortest_attempt_seconds: 0.2
   free: ['1']
 sections:
   - title: Opening poems
@@ -57,8 +56,6 @@ stage_field:
   most_below: 1.0
 difficult_words:
   score_threshold: 3
-listening:
-  shortest_attempt_seconds: 0.2
 ```
 
 ## Name its assets
@@ -79,7 +76,6 @@ listening:
 
 - ``DrillStage``
 - ``StageFieldScale``
-- ``ListeningThresholds``
 - ``DifficultWordsConfiguration``
 
 ### Name files

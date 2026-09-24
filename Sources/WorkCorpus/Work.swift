@@ -17,8 +17,6 @@ public struct Work: Decodable, Sendable {
     public let stageField: StageFieldScale
     /// Threshold used to identify difficult words.
     public let difficultWords: DifficultWordsConfiguration
-    /// Time limits used while listening to attempts.
-    public let listening: ListeningThresholds
 
     private enum CodingKeys: String, CodingKey {
         case pieces
@@ -26,7 +24,6 @@ public struct Work: Decodable, Sendable {
         case free
         case stageField = "stage_field"
         case difficultWords = "difficult_words"
-        case listening
     }
 }
 
@@ -51,7 +48,6 @@ extension WorkCorpus {
         case invalidFreePieces
         case invalidStageFieldScale
         case invalidDifficultWordThreshold
-        case invalidListeningThresholds
 
         var errorDescription: String? {
             switch self {
@@ -66,9 +62,6 @@ extension WorkCorpus {
 
             case .invalidDifficultWordThreshold:
                 "The difficult-word score threshold must be positive."
-
-            case .invalidListeningThresholds:
-                "The shortest attempt must be a positive number of seconds, shorter than a line."
             }
         }
     }
@@ -107,13 +100,6 @@ extension WorkCorpus {
 
         guard work.difficultWords.scoreThreshold > 0 else {
             throw WorkShapeError.invalidDifficultWordThreshold
-        }
-
-        let shorterThanAnyLine = 2.0
-        guard work.listening.shortestAttemptSeconds > 0,
-            work.listening.shortestAttemptSeconds < shorterThanAnyLine
-        else {
-            throw WorkShapeError.invalidListeningThresholds
         }
     }
 }

@@ -44,7 +44,17 @@ struct WorkFileTests {
         #expect(read.free == [1, 2])
         #expect(read.stageField.band(for: 0.0005) == .untouched)
         #expect(read.difficultWords.scoreThreshold == 3)
-        #expect(read.listening.shortestAttemptSeconds == 0.2)
+    }
+
+    @Test("a work file that still names a shortest attempt is read as before")
+    func olderReadingBlock() throws {
+        let older = try workFixture().replacingOccurrences(
+            of: "  difficult_word_score: 3\n",
+            with: "  difficult_word_score: 3\n  shortest_attempt_seconds: 0.2\n"
+        )
+
+        #expect(older != (try workFixture()))
+        #expect(try WorkCorpus.decodeWork(older).pieces.count == 3)
     }
 
     @Test("a piece that is not numbered is refused rather than renumbered")

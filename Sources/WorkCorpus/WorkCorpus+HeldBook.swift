@@ -47,8 +47,6 @@ public struct HeldReading: Sendable {
     public let mostBelow: Double
     /// Difficult-word score threshold.
     public let difficultWordScore: Int
-    /// Upper duration, in seconds, that is still treated as an accidental tap.
-    public let shortestAttemptSeconds: Double
     /// Piece numbers available without purchase.
     public let free: [Int]
 
@@ -58,14 +56,12 @@ public struct HeldReading: Sendable {
         begunBelow: Double,
         mostBelow: Double,
         difficultWordScore: Int,
-        shortestAttemptSeconds: Double,
         free: [Int]
     ) {
         self.untouchedBelow = untouchedBelow
         self.begunBelow = begunBelow
         self.mostBelow = mostBelow
         self.difficultWordScore = difficultWordScore
-        self.shortestAttemptSeconds = shortestAttemptSeconds
         self.free = free
     }
 }
@@ -98,8 +94,7 @@ extension WorkCorpus {
                 begunBelow: reading.begunBelow,
                 mostBelow: reading.mostBelow
             ),
-            difficultWords: DifficultWordsConfiguration(scoreThreshold: reading.difficultWordScore),
-            listening: ListeningThresholds(shortestAttemptSeconds: reading.shortestAttemptSeconds)
+            difficultWords: DifficultWordsConfiguration(scoreThreshold: reading.difficultWordScore)
         )
     }
 
