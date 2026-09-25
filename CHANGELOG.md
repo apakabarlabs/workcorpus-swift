@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.4.0
+
+### Changed
+
+- `DrillStage` is now `ReadingStage`. The `line` and `block` cases, raw values,
+  work cut names, and stored progress order are unchanged. The new name keeps
+  reading a work separate from apakabar.fm's unrelated `Drill` entity.
+
 ## 0.3.1
 
 ### Fixed

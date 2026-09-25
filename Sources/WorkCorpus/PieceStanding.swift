@@ -1,21 +1,21 @@
 import ReadAloudKit
 
-/// How far a reader has come through one piece: where each stage of the drill stands.
+/// How far a reader has come through one piece at each reading stage.
 public struct PieceStanding: Equatable, Sendable {
-    /// One state per known drill stage, in the order of `DrillStage.allCases`.
+    /// One state per known reading stage, in the order of `ReadingStage.allCases`.
     public let stages: [StageState]
 
-    /// Creates standing for the drill stages known to this release.
+    /// Creates standing for the reading stages known to this release.
     ///
     /// Omitted stages are padded with `.untouched`; values beyond the known stages
     /// are discarded.
     public init(stages: [StageState]) {
-        self.stages = DrillStage.allCases.indices.map { index in
+        self.stages = ReadingStage.allCases.indices.map { index in
             index < stages.count ? stages[index] : .untouched
         }
     }
 
-    /// Restores raw states for the drill stages known to this release.
+    /// Restores raw states for the reading stages known to this release.
     ///
     /// Omitted stages are padded with `.untouched`; values beyond the known stages
     /// are discarded.
@@ -24,8 +24,8 @@ public struct PieceStanding: Equatable, Sendable {
         self.init(stages: stored.map(StageState.init(stored:)))
     }
 
-    /// Returns the state associated with a drill stage.
-    public func state(of stage: DrillStage) -> StageState {
+    /// Returns the state associated with a reading stage.
+    public func state(of stage: ReadingStage) -> StageState {
         stages[stage.rawValue]
     }
 

@@ -37,7 +37,7 @@ struct WorkFileTests {
         #expect(read.parts[1].shortTitle == "The Fair Youth")
     }
 
-    @Test("the numbers the drill reads come off the reading block")
+    @Test("the reading thresholds come off the reading block")
     func thresholds() throws {
         let read = try WorkCorpus.assembleWork(workFixture())
 

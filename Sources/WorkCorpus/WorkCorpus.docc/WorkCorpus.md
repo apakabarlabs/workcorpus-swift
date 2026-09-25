@@ -74,7 +74,7 @@ difficult_words:
 
 ### Configure reading behavior
 
-- ``DrillStage``
+- ``ReadingStage``
 - ``StageFieldScale``
 - ``DifficultWordsConfiguration``
 

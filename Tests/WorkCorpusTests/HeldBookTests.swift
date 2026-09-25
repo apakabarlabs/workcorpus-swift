@@ -59,7 +59,7 @@ struct HeldBookTests {
         #expect(work.parts[1].pieces == 3...3)
     }
 
-    @Test("the numbers the drill reads come off the reading it was given")
+    @Test("the reading thresholds come off the reading it was given")
     func thresholds() {
         let work = WorkCorpus.assemble(pieces: pieces, reading: reading)
 

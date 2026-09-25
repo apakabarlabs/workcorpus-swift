@@ -3,7 +3,7 @@ import Testing
 
 @testable import WorkCorpus
 
-struct DrillStageTests {
+struct ReadingStageTests {
     private func piece(_ number: Int, lines count: Int, cuts: [String: [Int]] = [:]) -> Piece {
         Piece(
             number: number,
@@ -21,7 +21,7 @@ struct DrillStageTests {
             piece(126, lines: 12, cuts: ["block": [4, 4, 4]])
         ]
         for poem in pieces {
-            for stage in DrillStage.allCases {
+            for stage in ReadingStage.allCases {
                 let cuts = poem.cuts(for: stage)
                 #expect(cuts.first?.lowerBound == 0)
                 #expect(cuts.last?.upperBound == poem.lines.count - 1)
@@ -72,8 +72,8 @@ struct DrillStageTests {
 
     @Test("both stages are offered, and the whole piece is in each")
     func bothStagesCoverThePiece() {
-        #expect(DrillStage.allCases == [.line, .block])
-        for stage in DrillStage.allCases {
+        #expect(ReadingStage.allCases == [.line, .block])
+        for stage in ReadingStage.allCases {
             let cuts = piece(1, lines: 14, cuts: ["block": [4, 4, 4, 2]]).cuts(for: stage)
             #expect(cuts.first?.lowerBound == 0)
             #expect(cuts.last?.upperBound == 13)

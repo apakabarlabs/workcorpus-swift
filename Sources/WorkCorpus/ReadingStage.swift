@@ -1,7 +1,7 @@
 import Foundation
 
 /// The size of text a reader must complete in one attempt.
-public enum DrillStage: Int, CaseIterable, Identifiable, Sendable {
+public enum ReadingStage: Int, CaseIterable, Identifiable, Sendable {
     /// One printed line per attempt.
     case line = 0
     /// Work-defined groups of consecutive lines per attempt.
@@ -26,7 +26,7 @@ extension Piece {
     /// and it names them itself: how a sonnet falls into quatrains, a stanza into
     /// couplets or a scene into speeches is the work's own shape, not a rule anyone
     /// outside it can compute. A stage a work says nothing about is read line by line.
-    public func cuts(for stage: DrillStage) -> [ClosedRange<Int>] {
+    public func cuts(for stage: ReadingStage) -> [ClosedRange<Int>] {
         guard stage != .line, let sizes = cutSizes[stage.label], !sizes.isEmpty else {
             return lines.indices.map { $0...$0 }
         }
