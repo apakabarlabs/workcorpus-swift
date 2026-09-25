@@ -51,10 +51,12 @@ disabled_rules:
   # A protocol requirement and a public `init()` are empty because the language
   # says so, not because something is missing from them.
   - no_empty_block
-  # An absent key in the shared case files has to be told apart from a key that is
-  # there and says nothing, and optional is how that is spelled.
+  # A work file may leave out a section's sections, its pieces or a piece's cuts,
+  # and a list that is absent has to be told apart from one that is there and
+  # empty; optional is how that is spelled.
   - discouraged_optional_collection
   - discouraged_optional_boolean
-  # A default argument is part of this library's interface: the English weighting
-  # and the standing hold limit are what a caller gets by asking for neither.
+  # A default argument is part of this library's interface: a piece the work does
+  # not cut, and a part without a short title, are what a caller gets by passing
+  # neither.
   - discouraged_default_parameter

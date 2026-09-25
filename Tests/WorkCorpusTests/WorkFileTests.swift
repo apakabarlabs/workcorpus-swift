@@ -46,11 +46,14 @@ struct WorkFileTests {
         #expect(read.difficultWords.scoreThreshold == 3)
     }
 
-    @Test("a work file that still names a shortest attempt is read as before")
-    func olderReadingBlock() throws {
+    @Test(
+        "a work file that still names a shortest attempt is read, whatever it says",
+        arguments: ["0.2", "0", "200"]
+    )
+    func olderReadingBlock(seconds: String) throws {
         let older = try workFixture().replacingOccurrences(
             of: "  difficult_word_score: 3\n",
-            with: "  difficult_word_score: 3\n  shortest_attempt_seconds: 0.2\n"
+            with: "  difficult_word_score: 3\n  shortest_attempt_seconds: \(seconds)\n"
         )
 
         #expect(older != (try workFixture()))

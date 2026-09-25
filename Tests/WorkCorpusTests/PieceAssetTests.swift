@@ -17,6 +17,22 @@ struct PieceAssetTests {
         #expect(PieceAsset(stem: "onegin").number(inName: "sonnet-004.mp3") == nil)
     }
 
+    @Test("a number is read from a bare name, never from a path")
+    func numberInName() {
+        #expect(asset.number(inName: "sonnet-004.mp3") == 4)
+        #expect(asset.number(inName: "sonnet-004") == 4)
+        #expect(asset.number(inName: "sonnet-018-onyx.json") == 18)
+        #expect(asset.number(inName: asset.recording(4, voice: .onyx)) == nil)
+        #expect(asset.number(inName: "") == nil)
+    }
+
+    @Test("a voice is read off the alignment name it was written into")
+    func voiceInName() {
+        #expect(asset.voice(inName: asset.alignment(18, voice: .onyx)) == .onyx)
+        #expect(asset.voice(inName: "sonnet-018.json") == nil)
+        #expect(asset.voice(inName: "") == nil)
+    }
+
     @Test("a shared reading is named by piece, line and what was heard")
     func sharedReading() {
         #expect(

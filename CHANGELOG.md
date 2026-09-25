@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.3.1
+
+### Fixed
+
+- `PieceAsset.number(inName:)` and `voice(inName:)` read a bare file name again,
+  as in 0.2.0. 0.3.0 read the name as a path on disk, so a recording path such as
+  `onyx/sonnet-004.mp3` matched piece 4 and an empty name read the current
+  directory.
+
+### Changed
+
+- Building the documentation brings in `swift-docc-plugin` as a package
+  dependency, so `Package.resolved` gains it and `swift-docc-symbolkit`. Neither
+  is linked into the library.
+
 ## 0.3.0
 
 ### Removed
@@ -20,8 +35,9 @@
 
 ### Changed
 
-- `HeldPiece.init` takes `cutSizes` last, after the part it belongs to, so a
-  piece that is not cut can leave it out:
+- `HeldPiece.init` takes `cutSizes` last, after the part it belongs to, where a
+  defaulted argument sits in the rest of the library. Calls that pass it need the
+  new order:
 
   ```swift
   // 0.2

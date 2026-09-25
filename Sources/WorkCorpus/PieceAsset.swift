@@ -47,7 +47,7 @@ public struct PieceAsset: Sendable {
 
     /// Extracts a piece number from a filename belonging to this work.
     public func number(inName name: String) -> Int? {
-        let withoutExtension = URL(fileURLWithPath: name).deletingPathExtension().lastPathComponent
+        let withoutExtension = Self.withoutExtension(name)
         guard withoutExtension.hasPrefix("\(stem)-") else { return nil }
         return Int(withoutExtension.dropFirst(stem.count + 1).prefix(while: \.isNumber))
     }
@@ -57,12 +57,20 @@ public struct PieceAsset: Sendable {
     /// Pass the filename returned by ``alignment(_:voice:)``. Recording paths and
     /// shared-attempt names do not have the supported shape.
     public func voice(inName name: String) -> NarrationVoice? {
-        let withoutExtension = URL(fileURLWithPath: name).deletingPathExtension().lastPathComponent
+        let withoutExtension = Self.withoutExtension(name)
         guard let dash = withoutExtension.lastIndex(of: "-"), dash != withoutExtension.startIndex
         else {
             return nil
         }
         let tail = String(withoutExtension[withoutExtension.index(after: dash)...])
         return tail.allSatisfy(\.isNumber) ? nil : NarrationVoice(rawValue: tail)
+    }
+
+    private static func withoutExtension(_ name: String) -> Substring {
+        guard let dot = name.lastIndex(of: "."), dot != name.startIndex, !name[dot...].contains("/")
+        else {
+            return name[...]
+        }
+        return name[..<dot]
     }
 }

@@ -15,6 +15,26 @@ struct WorkTests {
         #expect(try WorkCorpus.decodeWorkFromBook(book).pieces.map(\.title) == ["First poem"])
     }
 
+    @Test(
+        "a book is read whatever it says about listening, or without it",
+        arguments: [
+            "listening:\n  shortest_attempt_seconds: 0\n",
+            "listening:\n  shortest_attempt_seconds: 200\n",
+            "listening: {}\n",
+            "listening: quick\n",
+            ""
+        ]
+    )
+    func listeningIsIgnored(listening: String) throws {
+        let book = try fixture("book-with-listening").replacingOccurrences(
+            of: "listening:\n  shortest_attempt_seconds: 0.2\n",
+            with: listening
+        )
+
+        #expect(book.hasSuffix("score_threshold: 3\n\(listening)"))
+        #expect(try WorkCorpus.decodeWorkFromBook(book).pieces.map(\.title) == ["First poem"])
+    }
+
     @Test("difficult words need a positive score threshold")
     func refusesInvalidDifficultWordThreshold() {
         #expect(throws: WorkCorpus.WorkShapeError.invalidDifficultWordThreshold) {
