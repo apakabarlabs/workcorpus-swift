@@ -222,7 +222,7 @@ extension WorkCorpus {
         guard next == work.pieces.count + 1 else { throw WorkShapeError.partsDoNotCoverTheWork }
 
         let free = Set(work.free)
-        let numbered = 1...max(work.pieces.count, 1)
+        let numbered = 1..<(work.pieces.count + 1)
         guard !free.isEmpty, free.count == work.free.count, free.allSatisfy(numbered.contains)
         else {
             throw WorkShapeError.invalidFreePieces

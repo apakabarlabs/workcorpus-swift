@@ -80,6 +80,8 @@
   a stem containing `%` produced a wrong name.
 - `PieceAsset.name` and `sharedReading` pad numbers themselves rather than through
   `%d`, which reads only 32 bits of an `Int`.
+- A work without pieces is refused with `WorkShapeError.invalidFreePieces`,
+  since no piece of it can be free. Until now its free list could name piece 1.
 
 ## 0.4.0
 
