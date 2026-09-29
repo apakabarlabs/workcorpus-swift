@@ -24,6 +24,7 @@ let package = Package(
             name: "WorkCorpusTests",
             dependencies: [
                 "WorkCorpus",
+                "Yams",
                 .product(name: "ReadAloudKit", package: "readaloudkit-swift")
             ],
             resources: [.process("Fixtures")]

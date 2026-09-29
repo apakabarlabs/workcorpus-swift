@@ -25,6 +25,37 @@ struct PieceAssetTests {
         #expect(percent.number(inName: "100%d-%@-004.mp3") == 4)
     }
 
+    @Test("a number past 32 bits is written in full")
+    func largeNumbers() {
+        #expect(asset.name(5_000_000_000) == "sonnet-5000000000")
+        #expect(asset.name(-4) == "sonnet--04")
+        #expect(asset.number(inName: "sonnet-5000000000.mp3") == 5_000_000_000)
+        #expect(
+            asset.sharedReading(piece: 5_000_000_000, line: 3, heard: nil) == "s5000000000-l03"
+        )
+    }
+
+    @Test("a stem and a name spelled with combining marks still match")
+    func normalizedNames() {
+        let composed = PieceAsset(stem: "caf\u{E9}")
+        let decomposed = PieceAsset(stem: "cafe\u{301}")
+
+        #expect(composed.number(inName: "cafe\u{301}-004.mp3") == 4)
+        #expect(decomposed.number(inName: "caf\u{E9}-004.mp3") == 4)
+        #expect(decomposed.number(inName: "cafe\u{301}-004.mp3") == 4)
+    }
+
+    @Test("only ASCII digits are read as the digits of a number")
+    func asciiDigits() {
+        let stem = PieceAsset(stem: "s")
+
+        #expect(stem.number(inName: "s-12三") == 12)
+        #expect(stem.number(inName: "s-\u{0663}") == nil)
+        #expect(stem.voice(inName: "s-001-三") == NarrationVoice(rawValue: "三"))
+        #expect(stem.voice(inName: "s-001-\u{0663}") == NarrationVoice(rawValue: "\u{0663}"))
+        #expect(stem.voice(inName: "s-001-042") == nil)
+    }
+
     @Test("a number is read from a bare name, never from a path")
     func numberInName() {
         #expect(asset.number(inName: "sonnet-004.mp3") == 4)

@@ -105,7 +105,7 @@ struct HeldBookTests {
 
     @Test("a work held without naming its language is refused")
     func unnamedLanguage() {
-        #expect(throws: WorkCorpus.WorkShapeError.unnamedLanguage) {
+        #expect(throws: WorkCorpus.WorkShapeError.invalidLanguage(" ")) {
             try WorkCorpus.work(language: " ", pieces: pieces, reading: reading)
         }
     }

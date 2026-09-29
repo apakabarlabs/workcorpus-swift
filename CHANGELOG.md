@@ -5,8 +5,13 @@
 ### Added
 
 - `Work.language`: the language the work names itself as written in. It is read
-  from the `language` key of a work file or an assembled book, and a work that
-  does not name one, or names a blank one, is refused.
+  from the `language` key of a work file or an assembled book, and has to be a
+  language tag: two or three lowercase letters, then any number of `-` and two to
+  eight ASCII letters or digits, such as `en`, `eng` or `en-GB`. Anything else is
+  refused with `WorkShapeError.invalidLanguage`, which names the value.
+- `WorkCorpus.WorkShapeError` is public, so a caller can tell which part of a work
+  is malformed. `decodeWork`, `decodeWorkFromBook`, `work` and `Piece`'s
+  initialisers document what they throw.
 
 ### Changed
 
@@ -17,7 +22,7 @@
   // 0.4
   try WorkCorpus.work(pieces: pieces, reading: reading)
   // 0.5
-  try WorkCorpus.work(language: work.language, pieces: pieces, reading: reading)
+  try WorkCorpus.work(language: "eng", pieces: pieces, reading: reading)
   ```
 - An assembled book needs a `language` key; one without it no longer decodes.
 - A piece's `cuts` table is validated when the piece is made, so no `Piece`
@@ -28,7 +33,13 @@
   piece and the stage. Until now sizes past the end of the piece were cut short,
   a shortfall was made up with one more cut of the remaining lines, and cuts for
   an unknown or the `line` stage were ignored. A stage the work says nothing
-  about is still read line by line.
+  about, or a `cuts` of `null`, is still read line by line. A cut size too large
+  to count is taken as the largest integer, so it is refused naming the piece and
+  the stage rather than failing to parse.
+- `PieceAsset` compares a stem and a file name in Unicode normalization form C,
+  and reads only the ASCII digits `0` to `9` as the digits of a piece number or
+  of a numeric voice suffix. A name such as `s-12三` now reads as piece 12, and
+  `s-001-三` names the voice `三`.
 - `Piece.init(number:title:lines:cutSizes:)` throws, since it is where the cuts
   are refused. Calls need `try`:
 
@@ -43,6 +54,8 @@
 
 - `PieceAsset.name` writes the stem as it is. It was used as a format string, so
   a stem containing `%` produced a wrong name.
+- `PieceAsset.name` and `sharedReading` write piece numbers past 32 bits in full.
+  They were formatted with `%d`, which reads only 32 bits of the number.
 
 ## 0.4.0
 

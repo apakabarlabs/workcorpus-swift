@@ -108,6 +108,32 @@ struct WorkFileTests {
         }
     }
 
+    @Test("a work file whose cut is too large to count is refused naming piece and stage")
+    func hugeCut() throws {
+        let huge = try workFixture().replacingOccurrences(
+            of: "          block:\n            - 2\n",
+            with: "          block:\n            - -99999999999999999999\n"
+        )
+
+        #expect(huge != (try workFixture()))
+        #expect(
+            throws: WorkCorpus.WorkShapeError.emptyCut(piece: 1, stage: "block", size: Int.min)
+        ) {
+            try WorkCorpus.decodeWork(huge)
+        }
+    }
+
+    @Test("a work file piece whose cuts are null is read as having none")
+    func nullCuts() throws {
+        let null = try workFixture().replacingOccurrences(
+            of: "        cuts:\n          block:\n            - 2\n",
+            with: "        cuts: null\n"
+        )
+
+        #expect(null != (try workFixture()))
+        #expect(try WorkCorpus.decodeWork(null).pieces[0].cutSizes == [:])
+    }
+
     @Test(
         "a work file that still names a shortest attempt is read, whatever it says",
         arguments: ["0.2", "0", "200"]

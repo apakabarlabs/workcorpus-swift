@@ -7,10 +7,11 @@ import Yams
 /// ``WorkCorpus/decodeWorkFromBook(_:)`` to validate the complete work before use.
 /// Decoding this type directly does not validate relationships between its fields.
 public struct Work: Decodable, Sendable {
-    /// Language the work is written in, as the work names it.
+    /// Language the work is written in, as the work names it: a language tag such as
+    /// `en`, `eng` or `en-GB`.
     ///
     /// It arrives with the work rather than being assumed, because the same reading
-    /// mechanics carry works in other languages, each held to its own alphabet.
+    /// mechanics carry works in other languages.
     public let language: String
     /// Reading pieces, expected to be numbered from one and ordered by number.
     public let pieces: [Piece]
@@ -49,18 +50,29 @@ public struct DifficultWordsConfiguration: Decodable, Sendable {
 }
 
 extension WorkCorpus {
-    enum WorkShapeError: LocalizedError, Equatable {
+    /// The work, or one of its pieces, is not shaped the way a work has to be.
+    public enum WorkShapeError: LocalizedError, Equatable {
+        /// The parts leave a gap, overlap, or stop short of the last piece.
         case partsDoNotCoverTheWork
+        /// The free pieces are empty, repeated, or outside the work.
         case invalidFreePieces
+        /// The stage field bounds are not increasing values between zero and one.
         case invalidStageFieldScale
+        /// The difficult-word score threshold is not positive.
         case invalidDifficultWordThreshold
-        case unnamedLanguage
+        /// The language the work names is not a language tag.
+        case invalidLanguage(String)
+        /// A piece is cut for a stage that does not exist.
         case cutsForUnknownStage(piece: Int, stage: String)
+        /// A piece is cut for the line stage, which is never cut.
         case cutsForLineStage(piece: Int)
+        /// A piece has a cut of zero or fewer lines at a stage.
         case emptyCut(piece: Int, stage: String, size: Int)
+        /// The cuts of a stage add up to more or fewer lines than the piece has.
         case cutsDoNotCoverThePiece(piece: Int, stage: String, cut: Int, lines: Int)
 
-        var errorDescription: String? {
+        /// Reader-facing description naming what is wrong and where.
+        public var errorDescription: String? {
             switch self {
             case .partsDoNotCoverTheWork:
                 "The parts do not cover the work exactly once."
@@ -74,8 +86,9 @@ extension WorkCorpus {
             case .invalidDifficultWordThreshold:
                 "The difficult-word score threshold must be positive."
 
-            case .unnamedLanguage:
-                "The work does not name the language it is written in."
+            case let .invalidLanguage(value):
+                "The work names its language as \"\(Self.shown(value))\", "
+                    + "which is not a language tag such as en, eng or en-GB."
 
             case let .cutsForUnknownStage(piece, stage):
                 "Piece \(piece) is cut for a stage called \(stage), which is not a reading stage."
@@ -90,9 +103,21 @@ extension WorkCorpus {
                 "Piece \(piece) is cut at the \(stage) stage into \(cut) lines, but it has \(lines)."
             }
         }
+
+        private static func shown(_ value: String) -> String {
+            value.unicodeScalars.map { scalar in
+                (0x20...0x7E).contains(scalar.value) && scalar != "\"" && scalar != "\\"
+                    ? String(scalar) : "\\u{\(String(scalar.value, radix: 16, uppercase: true))}"
+            }.joined()
+        }
     }
 
     /// Decodes an assembled book YAML document and validates the resulting work.
+    ///
+    /// - Throws: `DecodingError` when the document is not a book; ``WorkShapeError``
+    ///   when a piece's cuts do not divide its lines, or the parts, free pieces,
+    ///   thresholds or language are not shaped as a work's must be;
+    ///   ``CorpusError`` when the pieces are not numbered from one in order.
     public static func decodeWorkFromBook(_ yaml: String) throws -> Work {
         let work: Work
         do {
@@ -134,13 +159,34 @@ extension WorkCorpus {
             throw WorkShapeError.invalidDifficultWordThreshold
         }
 
-        guard !work.language.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
-            throw WorkShapeError.unnamedLanguage
+        guard isLanguageTag(work.language) else {
+            throw WorkShapeError.invalidLanguage(work.language)
+        }
+    }
+
+    private static func isLanguageTag(_ value: String) -> Bool {
+        let subtags = Array(value.unicodeScalars).split(
+            separator: "-",
+            omittingEmptySubsequences: false
+        )
+        guard let language = subtags.first, (2...3).contains(language.count),
+            language.allSatisfy({ ("a"..."z").contains($0) })
+        else {
+            return false
+        }
+        return subtags.dropFirst().allSatisfy { subtag in
+            (2...8).contains(subtag.count)
+                && subtag.allSatisfy {
+                    ("a"..."z").contains($0) || ("A"..."Z").contains($0) || ("0"..."9").contains($0)
+                }
         }
     }
 
     static func validateCuts(piece: Int, lines: Int, cutSizes: [String: [Int]]) throws {
-        for (label, sizes) in cutSizes.sorted(by: { $0.key < $1.key }) {
+        let labels = cutSizes.sorted {
+            $0.key.unicodeScalars.lexicographicallyPrecedes($1.key.unicodeScalars)
+        }
+        for (label, sizes) in labels {
             guard let stage = ReadingStage.allCases.first(where: { $0.label == label }) else {
                 throw WorkShapeError.cutsForUnknownStage(piece: piece, stage: label)
             }

@@ -81,6 +81,9 @@ extension WorkCorpus {
     ///   - language: The language the work names itself as written in.
     ///   - pieces: The pieces in reading order, each with the part it is filed under.
     ///   - reading: What a reading of the work is held to.
+    /// - Throws: ``WorkShapeError`` when a piece's cuts do not divide its lines, or the
+    ///   parts, free pieces, thresholds or language are not shaped as a work's must be;
+    ///   ``CorpusError`` when the pieces are not numbered from one in order.
     public static func work(
         language: String,
         pieces: [HeldPiece],

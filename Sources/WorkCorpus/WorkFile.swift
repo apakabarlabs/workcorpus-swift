@@ -37,7 +37,7 @@ struct WorkPiece: Decodable {
     let id: String
     let title: String
     let lines: [String]
-    let cuts: [String: [Int]]?
+    let cuts: [String: [CutSize]]?
 }
 
 extension WorkCorpus {
@@ -56,6 +56,12 @@ extension WorkCorpus {
     }
 
     /// Decodes a nested work-file YAML document and validates the resulting work.
+    ///
+    /// - Throws: `DecodingError` when the document is not a work file;
+    ///   ``WorkError`` when a piece or free-piece identifier is not a number;
+    ///   ``WorkShapeError`` when a piece's cuts do not divide its lines, or the parts,
+    ///   free pieces, thresholds or language are not shaped as a work's must be;
+    ///   ``CorpusError`` when the pieces are not numbered from one in order.
     public static func decodeWork(_ yaml: String) throws -> Work {
         let work = try assembleWork(yaml)
         try validate(work.pieces)
@@ -79,7 +85,7 @@ extension WorkCorpus {
                         partTitle: part.title,
                         partShort: part.short,
                         partSummary: part.summary ?? "",
-                        cutSizes: piece.cuts ?? [:]
+                        cutSizes: piece.cuts?.mapValues { $0.map(\.value) } ?? [:]
                     )
                 )
             }

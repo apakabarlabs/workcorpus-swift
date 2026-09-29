@@ -1,11 +1,14 @@
 import Testing
+import Yams
 
 @testable import WorkCorpus
 
 struct WorkTests {
     @Test("configuration is validated from the YAML model itself")
     func acceptsConfiguration() throws {
-        try WorkCorpus.validateConfiguration(work())
+        let book = try YAMLDecoder().decode(Work.self, from: fixture("book-with-listening"))
+
+        try WorkCorpus.validateConfiguration(book)
     }
 
     @Test("a book that still carries listening limits is read as before")
@@ -107,12 +110,68 @@ struct WorkTests {
         }
     }
 
-    @Test("a work has to name its language")
-    func refusesBlankLanguage() throws {
-        let work = try work(language: "")
+    @Test(
+        "a language that is not a language tag is refused, naming the value",
+        arguments: ["", " ", "\u{200B}", "\u{0085}", "eng\n", "EN", "e", "english", "en-", "en-GB-"]
+    )
+    func refusesLanguageThatIsNotATag(language: String) throws {
+        let work = try work(language: language)
 
-        #expect(throws: WorkCorpus.WorkShapeError.unnamedLanguage) {
+        #expect(throws: WorkCorpus.WorkShapeError.invalidLanguage(language)) {
             try WorkCorpus.validateConfiguration(work)
+        }
+    }
+
+    @Test(
+        "a language tag of two or three letters and its subtags is accepted",
+        arguments: ["en", "eng", "srp", "en-GB", "sr-Latn-RS", "zh-Hant", "es-419"]
+    )
+    func acceptsLanguageTags(language: String) throws {
+        try WorkCorpus.validateConfiguration(work(language: language))
+    }
+
+    @Test("what is wrong with a language is said with the value written out")
+    func languageErrorNamesTheValue() {
+        #expect(
+            WorkCorpus.WorkShapeError.invalidLanguage("\u{200B}").errorDescription
+                == "The work names its language as \"\\u{200B}\", "
+                + "which is not a language tag such as en, eng or en-GB."
+        )
+        #expect(
+            WorkCorpus.WorkShapeError.invalidLanguage("\u{0085}en").errorDescription
+                == "The work names its language as \"\\u{85}en\", "
+                + "which is not a language tag such as en, eng or en-GB."
+        )
+    }
+
+    @Test("a book piece whose cuts are null is read as having none")
+    func bookWithNullCuts() throws {
+        let book = try fixture("book-with-listening").replacingOccurrences(
+            of: "    lines: [The first line.]\n",
+            with: "    lines: [The first line.]\n    cuts: null\n"
+        )
+
+        #expect(book != (try fixture("book-with-listening")))
+        #expect(try WorkCorpus.decodeWorkFromBook(book).pieces[0].cutSizes == [:])
+    }
+
+    @Test("a cut too large to count is refused naming the piece and the stage")
+    func bookWithHugeCut() throws {
+        let book = try fixture("book-with-listening").replacingOccurrences(
+            of: "    lines: [The first line.]\n",
+            with: "    lines: [The first line.]\n    cuts:\n      block: [99999999999999999999]\n"
+        )
+
+        #expect(book != (try fixture("book-with-listening")))
+        #expect(
+            throws: WorkCorpus.WorkShapeError.cutsDoNotCoverThePiece(
+                piece: 1,
+                stage: "block",
+                cut: Int.max,
+                lines: 1
+            )
+        ) {
+            try WorkCorpus.decodeWorkFromBook(book)
         }
     }
 
