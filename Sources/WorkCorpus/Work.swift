@@ -5,7 +5,11 @@ import Yams
 ///
 /// Decode through ``WorkCorpus/decodeWork(_:)`` or
 /// ``WorkCorpus/decodeWorkFromBook(_:)`` to validate the complete work before use.
-/// Decoding this type directly does not validate relationships between its fields.
+/// Decoding this type directly does not validate relationships between its fields. It
+/// holds numbers, fractions and texts to the rules below as far as the decoder shows how
+/// a value was written, as `YAMLDecoder` and `JSONDecoder` do; the YAML rules on anchors,
+/// aliases, merge keys and repeated keys hold only through the two decoding functions,
+/// which parse the YAML themselves.
 ///
 /// Every number a work carries, from piece numbers to cut sizes, is a YAML integer that
 /// fits in 32 bits, written as plain decimal digits: `0`, or digits that do not start
@@ -147,8 +151,8 @@ extension WorkCorpus {
         /// key. YAML readers resolve these differently, so a work writes every value out
         /// where it belongs; the place is the anchored value or the merging mapping.
         case yamlReference(place: String)
-        /// A field that holds text is null: written as `~`, `null` or left empty. Empty
-        /// text is written as `""`.
+        /// A field that holds text is null, as the YAML 1.2 core schema reads null: written
+        /// as `null`, `Null`, `NULL` or `~`, or left empty. Empty text is written as `""`.
         case nullText(place: String)
         /// A field that holds a fraction holds something else: a quoted string, a
         /// boolean, null, or in YAML a number written other than as plain decimal digits

@@ -58,9 +58,10 @@
   dropped by Foundation before the library sees the number.
 - A text a work needs — its language, a piece's title, identifier and lines, a
   part's title and summary, a work file's slug and title — is refused with
-  `WorkShapeError.nullText`, naming the field, when it is null: written as `~` or
-  `null`, or left empty after its key or dash. Until now YAML null read as the
-  text `~`, `null` or nothing. Empty text is written as `""`, as a blank line of
+  `WorkShapeError.nullText`, naming the field, when it is null as the YAML 1.2
+  core schema reads null: written as `null`, `Null`, `NULL` or `~`, or left empty
+  after its key or dash. Until now YAML null read as the text it was written as,
+  or nothing. Empty text is written as `""`, as a blank line of
   a poem is. A null `short`, `summary` of a work-file section or `cuts` still
   reads as none.
 - The stage field bounds, `stage_field.*` in a book and `reading.*_below` in a
@@ -95,7 +96,11 @@
   mapping, such as `parts[0]`. They were resolved until now, but YAML readers do
   not resolve them alike, so the same file could read differently on another
   port. A `<<` key is refused in quotes too, since some readers merge it all
-  the same.
+  the same, and whatever it holds. These YAML rules, and the naming of a repeated
+  key, hold through `decodeWork` and `decodeWorkFromBook`, which parse the YAML
+  themselves; `Work` decoded with a caller's own `YAMLDecoder` leaves anchors,
+  aliases and merges to Yams, while its numbers, fractions and texts are held to
+  the same rules as far as the decoder shows how a value was written.
 - `PieceAsset` compares a stem and a file name in Unicode normalization form C,
   and reads only the ASCII digits `0` to `9` as the digits of a piece number or
   of a numeric voice suffix. A name such as `s-12三` now reads as piece 12, and

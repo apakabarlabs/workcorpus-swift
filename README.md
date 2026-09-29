@@ -35,6 +35,14 @@ let piece = work.pieces[0]
 let firstBlock = piece.cuts(for: .block)[0]
 ```
 
+`decodeWork` reads a work file and `decodeWorkFromBook` an assembled book. Both
+parse the YAML themselves, so they are the way to have a work held to every
+rule: numbers written as plain decimal digits within 32 bits, stage bounds as
+plain decimal fractions, no null where text belongs, and no YAML anchors,
+aliases, merge keys or repeated keys. `Work` is also `Decodable`, and decoded
+with another decoder, such as `JSONDecoder`, its numbers, fractions and texts
+are held to the same rules as far as that decoder shows how each was written.
+
 ## Documentation
 
 The [Swift-DocC API reference](https://apakabarlabs.github.io/workcorpus-swift/documentation/workcorpus/)
