@@ -88,9 +88,41 @@ struct WorkTests {
         }
     }
 
-    @Test("cuts that cover part of a piece leave the rest as one more cut")
-    func acceptsCutsShortOfThePiece() throws {
-        try WorkCorpus.validateConfiguration(work(cuts: ["block": [4, 4]]))
+    @Test("cuts that cover the piece exactly are accepted")
+    func acceptsCutsThatCoverThePiece() throws {
+        try WorkCorpus.validateConfiguration(work(cuts: ["block": [4, 4, 4, 2]]))
+    }
+
+    @Test("cuts shorter than the piece are refused rather than given a cut of the rest")
+    func refusesCutsShortOfThePiece() {
+        #expect(
+            throws: WorkCorpus.WorkShapeError.cutsDoNotCoverThePiece(
+                piece: 1,
+                stage: "block",
+                cut: 8,
+                lines: 14
+            )
+        ) {
+            try WorkCorpus.validateConfiguration(work(cuts: ["block": [4, 4]]))
+        }
+        #expect(
+            throws: WorkCorpus.WorkShapeError.cutsDoNotCoverThePiece(
+                piece: 1,
+                stage: "block",
+                cut: 0,
+                lines: 14
+            )
+        ) {
+            try WorkCorpus.validateConfiguration(work(cuts: ["block": []]))
+        }
+    }
+
+    @Test("a stage the work says nothing about is accepted, and read line by line")
+    func acceptsAnUncutStage() throws {
+        let work = work()
+
+        try WorkCorpus.validateConfiguration(work)
+        #expect(work.pieces[0].cuts(for: .block).count == 14)
     }
 
     @Test("a cut of no lines is refused, naming the piece and the stage")
@@ -106,7 +138,7 @@ struct WorkTests {
     @Test("cuts longer than the piece are refused rather than cut short")
     func refusesOverrunningCuts() {
         #expect(
-            throws: WorkCorpus.WorkShapeError.cutsOverrunThePiece(
+            throws: WorkCorpus.WorkShapeError.cutsDoNotCoverThePiece(
                 piece: 1,
                 stage: "block",
                 cut: 16,
@@ -116,7 +148,7 @@ struct WorkTests {
             try WorkCorpus.validateConfiguration(work(cuts: ["block": [4, 4, 4, 4]]))
         }
         #expect(
-            throws: WorkCorpus.WorkShapeError.cutsOverrunThePiece(
+            throws: WorkCorpus.WorkShapeError.cutsDoNotCoverThePiece(
                 piece: 1,
                 stage: "block",
                 cut: Int.max,
@@ -143,7 +175,7 @@ struct WorkTests {
 
     @Test("what is wrong with a cut is said in words that name the piece and the stage")
     func cutErrorsNameThePlace() {
-        let error = WorkCorpus.WorkShapeError.cutsOverrunThePiece(
+        let error = WorkCorpus.WorkShapeError.cutsDoNotCoverThePiece(
             piece: 99,
             stage: "block",
             cut: 16,

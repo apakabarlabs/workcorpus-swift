@@ -63,11 +63,35 @@ struct ReadingStageTests {
         #expect(piece(1, lines: 14).cuts(for: .block).count == 14)
     }
 
-    @Test("lines past the last cut are not dropped")
-    func nothingIsLeftBehindTheLastCut() {
-        #expect(
-            piece(1, lines: 14, cuts: ["block": [4, 4]]).cuts(for: .block).map(\.count) == [4, 4, 6]
+    @Test("a work whose cuts leave lines past the last cut is refused, naming piece and stage")
+    func linesLeftBehindTheLastCutAreRefused() {
+        let short = HeldPiece(
+            number: 1,
+            title: "Piece 1",
+            lines: (1...14).map { "line \($0)" },
+            partTitle: "The work",
+            partShort: nil,
+            partSummary: "",
+            cutSizes: ["block": [4, 4]]
         )
+        let reading = HeldReading(
+            untouchedBelow: 0.001,
+            begunBelow: 0.5,
+            mostBelow: 1,
+            difficultWordScore: 3,
+            free: [1]
+        )
+
+        #expect(
+            throws: WorkCorpus.WorkShapeError.cutsDoNotCoverThePiece(
+                piece: 1,
+                stage: "block",
+                cut: 8,
+                lines: 14
+            )
+        ) {
+            try WorkCorpus.work(language: "eng", pieces: [short], reading: reading)
+        }
     }
 
     @Test("both stages are offered, and the whole piece is in each")

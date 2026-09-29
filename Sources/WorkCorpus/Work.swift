@@ -58,7 +58,7 @@ extension WorkCorpus {
         case cutsForUnknownStage(piece: Int, stage: String)
         case cutsForLineStage(piece: Int)
         case emptyCut(piece: Int, stage: String, size: Int)
-        case cutsOverrunThePiece(piece: Int, stage: String, cut: Int, lines: Int)
+        case cutsDoNotCoverThePiece(piece: Int, stage: String, cut: Int, lines: Int)
 
         var errorDescription: String? {
             switch self {
@@ -86,7 +86,7 @@ extension WorkCorpus {
             case let .emptyCut(piece, stage, size):
                 "Piece \(piece) has a \(stage) cut of \(size) lines; a cut holds at least one."
 
-            case let .cutsOverrunThePiece(piece, stage, cut, lines):
+            case let .cutsDoNotCoverThePiece(piece, stage, cut, lines):
                 "Piece \(piece) is cut at the \(stage) stage into \(cut) lines, but it has \(lines)."
             }
         }
@@ -152,8 +152,8 @@ extension WorkCorpus {
                 let (sum, overflow) = total.addingReportingOverflow(size)
                 return overflow ? Int.max : sum
             }
-            guard cut <= piece.lines.count else {
-                throw WorkShapeError.cutsOverrunThePiece(
+            guard cut == piece.lines.count else {
+                throw WorkShapeError.cutsDoNotCoverThePiece(
                     piece: piece.number,
                     stage: label,
                     cut: cut,

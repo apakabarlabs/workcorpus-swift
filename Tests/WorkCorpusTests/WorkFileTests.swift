@@ -77,7 +77,7 @@ struct WorkFileTests {
 
         #expect(overrun != (try workFixture()))
         #expect(
-            throws: WorkCorpus.WorkShapeError.cutsOverrunThePiece(
+            throws: WorkCorpus.WorkShapeError.cutsDoNotCoverThePiece(
                 piece: 1,
                 stage: "block",
                 cut: 3,
@@ -85,6 +85,26 @@ struct WorkFileTests {
             )
         ) {
             try WorkCorpus.decodeWork(overrun)
+        }
+    }
+
+    @Test("a work file whose cuts fall short of a piece is refused")
+    func shortCuts() throws {
+        let short = try workFixture().replacingOccurrences(
+            of: "          block:\n            - 2\n",
+            with: "          block:\n            - 1\n"
+        )
+
+        #expect(short != (try workFixture()))
+        #expect(
+            throws: WorkCorpus.WorkShapeError.cutsDoNotCoverThePiece(
+                piece: 1,
+                stage: "block",
+                cut: 1,
+                lines: 2
+            )
+        ) {
+            try WorkCorpus.decodeWork(short)
         }
     }
 
