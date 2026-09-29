@@ -148,6 +148,8 @@ extension WorkCorpus {
         /// boolean, null, or in YAML a number written other than as plain decimal digits
         /// with an optional fractional part, such as `0.5_0`, `.5`, `5e-1` or `1:00`.
         case invalidFraction(place: String)
+        /// A YAML mapping names the same key more than once.
+        case repeatedKey(String)
 
         /// Reader-facing description naming what is wrong and where.
         public var errorDescription: String? {
@@ -197,6 +199,9 @@ extension WorkCorpus {
 
             case let .invalidFraction(place):
                 "The work's \(place) is not a decimal number written as plain digits."
+
+            case let .repeatedKey(key):
+                "The work names \(key) more than once in one mapping."
             }
         }
 
@@ -213,7 +218,7 @@ extension WorkCorpus {
     /// - Throws: `DecodingError` when the document is not YAML, or a field is missing
     ///   or is not text where text belongs; ``WorkShapeError`` when a number is not a
     ///   YAML integer within 32 bits, a fraction is not written in plain digits, a
-    ///   text is null, a value is written with a YAML
+    ///   text is null, a key is repeated, a value is written with a YAML
     ///   anchor, alias or merge key, a piece's cuts do not divide its lines, or the
     ///   parts, free pieces,
     ///   thresholds or language are not shaped as a work's must be; ``CorpusError``
@@ -232,6 +237,8 @@ extension WorkCorpus {
             do {
                 parser = try Parser(yaml: yaml, resolver: Resolver.basic.appending(.merge))
                 root = try parser.singleRoot() ?? ""
+            } catch YamlError.duplicatedKeysInMapping(let duplicates, _) {
+                throw WorkShapeError.repeatedKey(duplicates.sorted().first ?? "")
             } catch let error as YamlError {
                 throw DecodingError.dataCorrupted(
                     .init(

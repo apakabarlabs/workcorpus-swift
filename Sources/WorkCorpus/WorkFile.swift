@@ -62,7 +62,7 @@ extension WorkCorpus {
     ///   is not text where text belongs; ``WorkError`` when a piece or free-piece
     ///   identifier is not a whole number within 32 bits; ``WorkShapeError`` when a
     ///   number is not a YAML integer within 32 bits, a fraction is not written in
-    ///   plain digits, a text is null, a value is
+    ///   plain digits, a text is null, a key is repeated, a value is
     ///   written with a YAML anchor, alias or merge key, a piece's cuts do not divide
     ///   its lines, or the parts, free pieces, thresholds or language are not shaped as
     ///   a work's must be; ``CorpusError`` when the pieces are not numbered from one in

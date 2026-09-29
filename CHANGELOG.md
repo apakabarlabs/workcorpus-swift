@@ -65,6 +65,11 @@
   JSON number. A quoted value, a boolean, null, or in YAML `0.5_0`, `.5`, `5e-1`
   or sexagesimal `1:00` is refused with the new
   `WorkShapeError.invalidFraction`, naming the field.
+- A YAML mapping that names a key twice is refused with the new
+  `WorkShapeError.repeatedKey`, naming the key, rather than with the parser's
+  `DecodingError`. A key the work does not know is skipped, in YAML and JSON
+  alike. A key repeated in one JSON object is not refused: `JSONDecoder` keeps
+  one of the values before a `Decodable` type sees the object.
 - `Part.init` throws `WorkShapeError.partOutOfRange` for a part that starts before
   piece one, ends before it starts, or does not fit in 32 bits, and a work whose
   part runs past its last piece is refused with the same error rather than
