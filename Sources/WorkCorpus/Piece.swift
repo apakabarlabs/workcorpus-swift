@@ -96,7 +96,7 @@ struct WholeNumber: Decodable {
         guard let first = digits.first, digits.allSatisfy({ ("0"..."9").contains($0) }) else {
             return false
         }
-        return first != "0" || digits.count == 1
+        return first != "0" || written == "0"
     }
 }
 

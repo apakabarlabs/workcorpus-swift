@@ -39,7 +39,8 @@
   a YAML integer that fits in 32 bits, written as plain decimal digits with an
   optional `-` and no leading zero, so that every port reads the same work.
   A larger value, a quoted string, a float, a boolean, or a number written with
-  `+`, a leading zero, underscores, `0x`/`0o`/`0b` or as sexagesimal `1:30` is
+  `+`, a leading zero, as `-0`, with underscores, `0x`/`0o`/`0b` or as
+  sexagesimal `1:30` is
   refused with `WorkShapeError.invalidNumber`, naming the field, such as
   `pieces[0].cuts.block[1]`; a piece identifier past 32 bits is
   `WorkError.pieceIsNotNumbered`. `PieceAsset.number(inName:)` reads no number
