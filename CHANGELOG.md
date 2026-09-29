@@ -61,27 +61,29 @@
   `WorkShapeError.nullText`, naming the field, when it is null as the YAML 1.2
   core schema reads null: written as `null`, `Null`, `NULL` or `~`, or left empty
   after its key or dash. Until now YAML null read as the text it was written as,
-  or nothing. Empty text is written as `""`, as a blank line of
-  a poem is. A null `short`, `summary` of a work-file section or `cuts` still
-  reads as none.
+  or nothing. Empty text is written as `""`, as a blank line of a poem is. A null
+  `short`, `summary` of a work-file section or `cuts` still reads as none.
 - The stage field bounds, `stage_field.*` in a book and `reading.*_below` in a
   work file, follow the one writing numbers follow: in YAML plain decimal digits
   with an optional `-` and fractional part, such as `0.001` or `1`; in JSON a
   JSON number. A quoted value, a boolean, null, or in YAML `0.5_0`, `.5`, `5e-1`
-  or sexagesimal `1:00` is refused with the new
-  `WorkShapeError.invalidFraction`, naming the field, and so is a JSON bound a
-  `Double` cannot hold, such as `1e-400` or `1e400`.
+  or sexagesimal `1:00` is refused with the new `WorkShapeError.invalidFraction`,
+  naming the field, and so is a JSON bound a `Double` cannot hold, such as
+  `1e-400` or `1e400`.
 - A YAML mapping that names a key twice is refused with the new
   `WorkShapeError.repeatedKey`, naming the key, rather than with the parser's
   `DecodingError`. Of several repeated keys, the one repeated first in the
   document is named; of several repeated on one line, as a flow mapping can, the
-  first in code-point order. When a work has several of the YAML problems — an
-  anchor, alias or merge key, an explicit tag, a repeated key — the one that comes
-  first in the document is reported, and an alias with no anchor, such as
-  `*nowhere`, is refused as `yamlReference` naming its field. A key the work
-  does not know is skipped, in YAML and JSON alike. A key repeated in one JSON
-  object is not refused: `JSONDecoder` keeps one of its values before a
-  `Decodable` type sees the object, and which one may differ between the ports.
+  first in code-point order, where the Kotlin port names the first written. When
+  a work has several of the YAML problems — an anchor, alias or merge key, an
+  explicit tag, a repeated key — the one that comes first in the document is
+  reported, and an alias with no anchor, such as `*nowhere`, is refused as
+  `yamlReference` naming its field. Keys equal only under Unicode canonical
+  equivalence count as one key here and as two in the Kotlin port, a rare
+  difference no case pins. A key the work does not know is skipped, in YAML and
+  JSON alike. A key repeated in one JSON object is not refused: `JSONDecoder`
+  keeps one of its values before a `Decodable` type sees the object, and which
+  one may differ between the ports.
 - `Part.init` throws `WorkShapeError.partOutOfRange` for a part that starts before
   piece one, ends before it starts, or does not fit in 32 bits, and a work whose
   part runs past its last piece is refused with the same error rather than
@@ -104,15 +106,16 @@
   port. A `<<` key is refused in quotes too, since some readers merge it all
   the same, and whatever it holds. These YAML rules, and the naming of a repeated
   key, hold through `decodeWork` and `decodeWorkFromBook`, which parse the YAML
-  themselves; `Work` decoded with a caller's own `YAMLDecoder` leaves anchors,
-  aliases and merges to Yams, while its numbers, fractions and texts are held to
-  the same rules as far as the decoder shows how a value was written.
+  themselves, and are not applied when `Work` is decoded directly. Decoded from
+  JSON with `JSONDecoder`, as the shared cases test, its numbers, fractions and
+  texts are held to the same rules, and a JSON syntax error reaches the caller as
+  `JSONDecoder`'s own `DecodingError`.
 - A value written with an explicit YAML tag — `!!str 3`, `!!int 3`, `!poem`, the
   non-specific `!`, or a tag on a list or mapping — is refused with the new
   `WorkShapeError.explicitTag`, naming the field, so that `score_threshold:
   !!str 3` no longer reads as 3. Yams cannot tell `!!str` on a quoted value or on
-  a key from no tag at all, so those two alone are read as if untagged; the
-  Kotlin port refuses them too.
+  a key from no tag at all, so those two alone are read as if untagged, while the
+  Kotlin port refuses them: a rare difference no case pins.
 - `PieceAsset` compares a stem and a file name in Unicode normalization form C,
   and reads only the ASCII digits `0` to `9` as the digits of a piece number or
   of a numeric voice suffix. A name such as `s-12三` now reads as piece 12, and
