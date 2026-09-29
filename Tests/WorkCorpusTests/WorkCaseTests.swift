@@ -9,8 +9,9 @@ struct WorkCase: Decodable, Sendable, CustomTestStringConvertible {
     let source: String
     let replace: String?
     let with: String?
+    let error: String?
     let refused: String?
-    let threshold: Int?
+    let read: WorkReadingCase?
 
     var testDescription: String { name }
 
@@ -19,8 +20,9 @@ struct WorkCase: Decodable, Sendable, CustomTestStringConvertible {
         case source = "fixture"
         case replace
         case with
+        case error
         case refused
-        case threshold
+        case read
     }
 
     static func all() throws -> [Self] {
@@ -54,6 +56,29 @@ struct WorkCase: Decodable, Sendable, CustomTestStringConvertible {
     }
 }
 
+struct WorkReadingCase: Decodable, Sendable {
+    let numbers: [Int]?
+    let titles: [String]?
+    let lines: [String]?
+    let parts: [[Int]]?
+    let free: [Int]?
+    let bands: [Double]?
+    let threshold: Int?
+
+    func check(_ work: Work) {
+        if let numbers { #expect(work.pieces.map(\.number) == numbers) }
+        if let titles { #expect(work.pieces.map(\.title) == titles) }
+        if let lines { #expect(work.pieces.first?.lines == lines) }
+        if let parts { #expect(work.parts.map { [$0.first, $0.last] } == parts) }
+        if let free { #expect(work.free == free) }
+        if let bands {
+            let scale = work.stageField
+            #expect([scale.untouchedBelow, scale.begunBelow, scale.mostBelow] == bands)
+        }
+        if let threshold { #expect(work.difficultWords.scoreThreshold == threshold) }
+    }
+}
+
 private struct WorkCases: Decodable {
     let jsonBook: String
     let cases: [WorkCase]
@@ -82,15 +107,24 @@ struct WorkCaseTests {
         arguments: try WorkCase.all()
     )
     func sharedCase(_ shared: WorkCase) throws {
+        #expect((shared.refused == nil) == (shared.error == nil), "a refusal names its error")
+        #expect((shared.refused == nil) != (shared.read == nil), "a case is read or refused")
         let document = try shared.document()
         do {
             let work = try shared.read(document)
             #expect(shared.refused == nil, "read, though the case expects: \(shared.refused ?? "")")
-            if let threshold = shared.threshold {
-                #expect(work.difficultWords.scoreThreshold == threshold)
-            }
-        } catch let refusal as LocalizedError {
-            #expect(refusal.errorDescription == shared.refused)
+            shared.read?.check(work)
+        } catch let refusal as WorkCorpus.WorkShapeError {
+            expect(refusal, named: shared)
+        } catch let refusal as WorkCorpus.CorpusError {
+            expect(refusal, named: shared)
+        } catch let refusal as WorkCorpus.WorkError {
+            expect(refusal, named: shared)
         }
+    }
+
+    private func expect(_ refusal: some LocalizedError, named shared: WorkCase) {
+        #expect(String(String(describing: refusal).prefix { $0 != "(" }) == shared.error)
+        #expect(refusal.errorDescription == shared.refused)
     }
 }
