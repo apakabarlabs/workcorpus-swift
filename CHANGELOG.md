@@ -65,7 +65,8 @@
   `WorkShapeError.yamlReference`, naming the anchored value or the merging
   mapping, such as `parts[0]`. They were resolved until now, but YAML readers do
   not resolve them alike, so the same file could read differently on another
-  port. A key written as `'<<'` in quotes is an ordinary key.
+  port. A `<<` key is refused in quotes too, since some readers merge it all
+  the same.
 - `PieceAsset` compares a stem and a file name in Unicode normalization form C,
   and reads only the ASCII digits `0` to `9` as the digits of a piece number or
   of a numeric voice suffix. A name such as `s-12三` now reads as piece 12, and

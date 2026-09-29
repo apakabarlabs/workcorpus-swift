@@ -138,7 +138,8 @@ cases:
     replace: "  - title: The Fair Youth\n"
     with: "  - <<: {short: Fair}\n    title: The Fair Youth\n"
     refused: "The work's sections[1] is written with a YAML anchor, alias or merge key; a work writes each value out where it belongs."
-  - case: a key merely spelt << in quotes is no merge key and is ignored
+  - case: a << key in quotes is refused as a merge key too
     fixture: book-with-listening
     replace: "  - title: Opening poems\n"
     with: "  - '<<': {short: Opening}\n    title: Opening poems\n"
+    refused: "The work's parts[0] is written with a YAML anchor, alias or merge key; a work writes each value out where it belongs."

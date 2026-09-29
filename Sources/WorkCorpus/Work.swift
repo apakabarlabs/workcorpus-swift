@@ -229,7 +229,7 @@ extension WorkCorpus {
         switch node {
         case .mapping(let mapping):
             for (key, value) in mapping {
-                guard key.anchor == nil, key.tag.rawValue != Tag.Name.merge.rawValue else {
+                guard key.anchor == nil, key.string != "<<" else {
                     throw WorkShapeError.yamlReference(place: place.isEmpty ? "top level" : place)
                 }
                 let name = key.string ?? ""
