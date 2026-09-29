@@ -115,6 +115,16 @@ struct WorkTests {
         ) {
             try WorkCorpus.validateConfiguration(work(cuts: ["block": [4, 4, 4, 4]]))
         }
+        #expect(
+            throws: WorkCorpus.WorkShapeError.cutsOverrunThePiece(
+                piece: 1,
+                stage: "block",
+                cut: Int.max,
+                lines: 14
+            )
+        ) {
+            try WorkCorpus.validateConfiguration(work(cuts: ["block": [Int.max, 1]]))
+        }
     }
 
     @Test("cuts for a stage there is no such thing as are refused rather than ignored")

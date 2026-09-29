@@ -148,7 +148,10 @@ extension WorkCorpus {
             if let empty = sizes.first(where: { $0 <= 0 }) {
                 throw WorkShapeError.emptyCut(piece: piece.number, stage: label, size: empty)
             }
-            let cut = sizes.reduce(0, +)
+            let cut = sizes.reduce(0) { total, size in
+                let (sum, overflow) = total.addingReportingOverflow(size)
+                return overflow ? Int.max : sum
+            }
             guard cut <= piece.lines.count else {
                 throw WorkShapeError.cutsOverrunThePiece(
                     piece: piece.number,
