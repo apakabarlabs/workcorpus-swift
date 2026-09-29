@@ -61,10 +61,10 @@ extension WorkCorpus {
     /// - Throws: `DecodingError` when the document is not YAML, or a field is missing or
     ///   is not text where text belongs; ``WorkError`` when a piece or free-piece
     ///   identifier is not a whole number within 32 bits; ``WorkShapeError`` when a
-    ///   number is not a YAML integer within 32 bits, a piece's cuts do not divide its
-    ///   lines, or the parts, free pieces, thresholds or language are not shaped as a
-    ///   work's must be; ``CorpusError`` when the pieces are not numbered from one in
-    ///   order.
+    ///   number is not a YAML integer within 32 bits, a value is written with a YAML
+    ///   anchor, alias or merge key, a piece's cuts do not divide its lines, or the
+    ///   parts, free pieces, thresholds or language are not shaped as a work's must be;
+    ///   ``CorpusError`` when the pieces are not numbered from one in order.
     public static func decodeWork(_ yaml: String) throws -> Work {
         let work = try assembleWork(yaml)
         try validate(work.pieces)
@@ -73,7 +73,7 @@ extension WorkCorpus {
     }
 
     static func assembleWork(_ yaml: String) throws -> Work {
-        let work = try decoding { try YAMLDecoder().decode(WorkFile.self, from: yaml) }
+        let work = try decodeYAML(WorkFile.self, from: yaml)
         var pieces: [HeldPiece] = []
         for part in parts(of: work.sections) {
             for piece in part.pieces ?? [] {

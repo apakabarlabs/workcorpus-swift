@@ -12,6 +12,10 @@ import Yams
 /// with `0` after an optional `-`. A `+`, `-0`, underscores, `0x`, `0o` or `0b`
 /// prefixes and sexagesimal `1:30` are refused, so that every port reads a number the
 /// same way.
+///
+/// A work is written out in full. A YAML anchor, an alias or a `<<` merge key is
+/// refused with ``WorkCorpus/WorkShapeError/yamlReference(place:)``, since YAML
+/// readers do not resolve them alike.
 public struct Work: Decodable, Sendable {
     /// Language the work is written in, as the work names it: a language tag such as
     /// `en`, `eng` or `en-GB`.
@@ -123,6 +127,10 @@ extension WorkCorpus {
         /// A piece has a cut of zero or fewer lines at a stage.
         case emptyCut(piece: Int, stage: String, size: Int)
         case cutsDoNotCoverThePiece(piece: Int, stage: String, cut: Int, lines: Int)
+        /// A value is given a YAML anchor, taken from an alias, or merged in with a `<<`
+        /// key. YAML readers resolve these differently, so a work writes every value out
+        /// where it belongs; the place is the anchored value or the merging mapping.
+        case yamlReference(place: String)
 
         /// Reader-facing description naming what is wrong and where.
         public var errorDescription: String? {
@@ -161,6 +169,10 @@ extension WorkCorpus {
 
             case let .cutsDoNotCoverThePiece(piece, stage, cut, lines):
                 "Piece \(piece) is cut at the \(stage) stage into \(cut) lines, but it has \(lines)."
+
+            case let .yamlReference(place):
+                "The work's \(place) is written with a YAML anchor, alias or merge key; "
+                    + "a work writes each value out where it belongs."
             }
         }
 
@@ -176,14 +188,62 @@ extension WorkCorpus {
     ///
     /// - Throws: `DecodingError` when the document is not YAML, or a field is missing
     ///   or is not text where text belongs; ``WorkShapeError`` when a number is not a
-    ///   YAML integer within 32 bits, a piece's cuts do not divide its lines, or the
-    ///   parts, free pieces, thresholds or language are not shaped as a work's must be;
-    ///   ``CorpusError`` when the pieces are not numbered from one in order.
+    ///   YAML integer within 32 bits, a value is written with a YAML anchor, alias or
+    ///   merge key, a piece's cuts do not divide its lines, or the parts, free pieces,
+    ///   thresholds or language are not shaped as a work's must be; ``CorpusError``
+    ///   when the pieces are not numbered from one in order.
     public static func decodeWorkFromBook(_ yaml: String) throws -> Work {
-        let work = try decoding { try YAMLDecoder().decode(Work.self, from: yaml) }
+        let work = try decodeYAML(Work.self, from: yaml)
         try validate(work.pieces)
         try validateConfiguration(work)
         return work
+    }
+
+    static func decodeYAML<T: Decodable>(_ type: T.Type, from yaml: String) throws -> T {
+        try decoding {
+            let parser: Parser
+            let root: Node
+            do {
+                parser = try Parser(yaml: yaml, resolver: Resolver.basic.appending(.merge))
+                root = try parser.singleRoot() ?? ""
+            } catch let error as YamlError {
+                throw DecodingError.dataCorrupted(
+                    .init(
+                        codingPath: [],
+                        debugDescription: "The given data was not valid YAML.",
+                        underlyingError: error
+                    )
+                )
+            }
+            return try withExtendedLifetime(parser) {
+                try refuseReferences(in: root, at: "")
+                return try YAMLDecoder().decode(type, from: root)
+            }
+        }
+    }
+
+    private static func refuseReferences(in node: Node, at place: String) throws {
+        guard node.anchor == nil else {
+            throw WorkShapeError.yamlReference(place: place.isEmpty ? "top level" : place)
+        }
+        switch node {
+        case .mapping(let mapping):
+            for (key, value) in mapping {
+                guard key.anchor == nil, key.tag.rawValue != Tag.Name.merge.rawValue else {
+                    throw WorkShapeError.yamlReference(place: place.isEmpty ? "top level" : place)
+                }
+                let name = key.string ?? ""
+                try refuseReferences(in: value, at: place.isEmpty ? name : "\(place).\(name)")
+            }
+        case .sequence(let sequence):
+            for (index, item) in sequence.enumerated() {
+                try refuseReferences(in: item, at: "\(place)[\(index)]")
+            }
+        case .alias:
+            throw WorkShapeError.yamlReference(place: place.isEmpty ? "top level" : place)
+        case .scalar:
+            break
+        }
     }
 
     static func decoding<T>(_ decode: () throws -> T) throws -> T {

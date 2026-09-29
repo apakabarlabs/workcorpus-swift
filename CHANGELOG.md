@@ -60,6 +60,12 @@
 - A work file or held pieces whose numbering does not run from one in order are
   refused with `CorpusError.outOfOrder` before their parts are assembled, so a
   piece numbered `0` is named as out of order rather than as a part out of range.
+- A work file or book that gives a value a YAML anchor, takes one from an alias,
+  or merges a mapping in with a `<<` key is refused with the new
+  `WorkShapeError.yamlReference`, naming the anchored value or the merging
+  mapping, such as `parts[0]`. They were resolved until now, but YAML readers do
+  not resolve them alike, so the same file could read differently on another
+  port. A key written as `'<<'` in quotes is an ordinary key.
 - `PieceAsset` compares a stem and a file name in Unicode normalization form C,
   and reads only the ASCII digits `0` to `9` as the digits of a piece number or
   of a numeric voice suffix. A name such as `s-12三` now reads as piece 12, and
