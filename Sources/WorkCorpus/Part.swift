@@ -58,12 +58,13 @@ public struct Part: Decodable, Identifiable, Sendable, Equatable {
     ///
     /// - Throws: `DecodingError` when a field is missing or is not text where text
     ///   belongs; ``WorkCorpus/WorkShapeError`` naming the field when `first` or `last`
-    ///   is not a YAML integer within 32 bits, or when the part is not a range of pieces.
+    ///   is not a whole number within 32 bits or the title or summary is null, or when
+    ///   the part is not a range of pieces. A null `short` is read as none.
     public init(from decoder: Decoder) throws {
         let values = try decoder.container(keyedBy: CodingKeys.self)
         try self.init(
-            title: try values.decode(String.self, forKey: .title),
-            summary: try values.decode(String.self, forKey: .summary),
+            title: try values.decode(Text.self, forKey: .title).value,
+            summary: try values.decode(Text.self, forKey: .summary).value,
             first: try values.decode(WholeNumber.self, forKey: .first).value,
             last: try values.decode(WholeNumber.self, forKey: .last).value,
             short: try values.decodeIfPresent(String.self, forKey: .short)

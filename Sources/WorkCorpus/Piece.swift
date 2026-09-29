@@ -58,15 +58,15 @@ public struct Piece: Decodable, Identifiable, Sendable, Equatable {
     ///
     /// - Throws: `DecodingError` when a field is missing or is not text where text
     ///   belongs; ``WorkCorpus/WorkShapeError`` naming the field when the number or a
-    ///   cut size is not a YAML integer within 32 bits, or naming the piece and the stage
-    ///   when the cuts do not divide the lines.
+    ///   cut size is not a whole number within 32 bits or the title or a line is null,
+    ///   or naming the piece and the stage when the cuts do not divide the lines.
     public init(from decoder: Decoder) throws {
         let values = try decoder.container(keyedBy: CodingKeys.self)
         let cuts = try values.decodeIfPresent([String: [WholeNumber]].self, forKey: .cutSizes)
         try self.init(
             number: try values.decode(WholeNumber.self, forKey: .number).value,
-            title: try values.decode(String.self, forKey: .title),
-            lines: try values.decode([String].self, forKey: .lines),
+            title: try values.decode(Text.self, forKey: .title).value,
+            lines: try values.decode([Text].self, forKey: .lines).map(\.value),
             cutSizes: cuts?.mapValues { $0.map(\.value) } ?? [:]
         )
     }

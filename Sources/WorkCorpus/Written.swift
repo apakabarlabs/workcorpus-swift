@@ -44,6 +44,18 @@ struct WholeNumber: Decodable {
     }
 }
 
+struct Text: Decodable {
+    let value: String
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        guard !container.decodeNil() else {
+            throw WorkCorpus.WorkShapeError.nullText(place: WorkCorpus.place(decoder.codingPath))
+        }
+        value = try container.decode(String.self)
+    }
+}
+
 private func writtenText(in container: SingleValueDecodingContainer) throws -> String? {
     do {
         return try container.decode(String.self)

@@ -52,6 +52,13 @@
   bits or `-0` is refused with `WorkShapeError.invalidNumber`, naming the field.
   The value is read exactly as written rather than through a binary float, so
   `5.000000000000000001` and `4.9999999999999999999` are fractions and refused.
+- A text a work needs — its language, a piece's title, identifier and lines, a
+  part's title and summary, a work file's slug and title — is refused with
+  `WorkShapeError.nullText`, naming the field, when it is null: written as `~` or
+  `null`, or left empty after its key or dash. Until now YAML null read as the
+  text `~`, `null` or nothing. Empty text is written as `""`, as a blank line of
+  a poem is. A null `short`, `summary` of a work-file section or `cuts` still
+  reads as none.
 - `Part.init` throws `WorkShapeError.partOutOfRange` for a part that starts before
   piece one, ends before it starts, or does not fit in 32 bits, and a work whose
   part runs past its last piece is refused with the same error rather than

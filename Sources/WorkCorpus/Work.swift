@@ -68,10 +68,11 @@ public struct Work: Decodable, Sendable {
     ///
     /// - Throws: `DecodingError` when a field is missing or is not text where text
     ///   belongs; ``WorkCorpus/WorkShapeError`` naming the field when a number is not a
-    ///   YAML integer within 32 bits, or when a piece or part is out of shape.
+    ///   whole number within 32 bits or a text is null, or when a piece or part is out
+    ///   of shape.
     public init(from decoder: Decoder) throws {
         let values = try decoder.container(keyedBy: CodingKeys.self)
-        language = try values.decode(String.self, forKey: .language)
+        language = try values.decode(Text.self, forKey: .language).value
         pieces = try values.decode([Piece].self, forKey: .pieces)
         parts = try values.decode([Part].self, forKey: .parts)
         free = try values.decode([WholeNumber].self, forKey: .free).map(\.value)
@@ -136,6 +137,9 @@ extension WorkCorpus {
         /// key. YAML readers resolve these differently, so a work writes every value out
         /// where it belongs; the place is the anchored value or the merging mapping.
         case yamlReference(place: String)
+        /// A field that holds text is null: written as `~`, `null` or left empty. Empty
+        /// text is written as `""`.
+        case nullText(place: String)
 
         /// Reader-facing description naming what is wrong and where.
         public var errorDescription: String? {
@@ -178,6 +182,10 @@ extension WorkCorpus {
             case let .yamlReference(place):
                 "The work's \(place) is written with a YAML anchor, alias or merge key; "
                     + "a work writes each value out where it belongs."
+
+            case let .nullText(place):
+                "The work's \(place) is null where text belongs; "
+                    + "an empty text is written as \"\"."
             }
         }
 
@@ -193,8 +201,9 @@ extension WorkCorpus {
     ///
     /// - Throws: `DecodingError` when the document is not YAML, or a field is missing
     ///   or is not text where text belongs; ``WorkShapeError`` when a number is not a
-    ///   YAML integer within 32 bits, a value is written with a YAML anchor, alias or
-    ///   merge key, a piece's cuts do not divide its lines, or the parts, free pieces,
+    ///   YAML integer within 32 bits, a text is null, a value is written with a YAML
+    ///   anchor, alias or merge key, a piece's cuts do not divide its lines, or the
+    ///   parts, free pieces,
     ///   thresholds or language are not shaped as a work's must be; ``CorpusError``
     ///   when the pieces are not numbered from one in order.
     public static func decodeWorkFromBook(_ yaml: String) throws -> Work {

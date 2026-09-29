@@ -2,9 +2,9 @@ import Foundation
 import Yams
 
 struct WorkFile: Decodable, Sendable {
-    let slug: String
-    let language: String
-    let title: String
+    let slug: Text
+    let language: Text
+    let title: Text
     let reading: WorkReading
     let sections: [WorkSection]
 }
@@ -14,7 +14,7 @@ struct WorkReading: Decodable {
     let begunBelow: Double
     let mostBelow: Double
     let difficultWordScore: WholeNumber
-    let free: [String]
+    let free: [Text]
 
     private enum CodingKeys: String, CodingKey {
         case untouchedBelow = "untouched_below"
@@ -26,7 +26,7 @@ struct WorkReading: Decodable {
 }
 
 struct WorkSection: Decodable {
-    let title: String
+    let title: Text
     let short: String?
     let summary: String?
     let sections: [Self]?
@@ -34,9 +34,9 @@ struct WorkSection: Decodable {
 }
 
 struct WorkPiece: Decodable {
-    let id: String
-    let title: String
-    let lines: [String]
+    let id: Text
+    let title: Text
+    let lines: [Text]
     let cuts: [String: [WholeNumber]]?
 }
 
@@ -61,10 +61,11 @@ extension WorkCorpus {
     /// - Throws: `DecodingError` when the document is not YAML, or a field is missing or
     ///   is not text where text belongs; ``WorkError`` when a piece or free-piece
     ///   identifier is not a whole number within 32 bits; ``WorkShapeError`` when a
-    ///   number is not a YAML integer within 32 bits, a value is written with a YAML
-    ///   anchor, alias or merge key, a piece's cuts do not divide its lines, or the
-    ///   parts, free pieces, thresholds or language are not shaped as a work's must be;
-    ///   ``CorpusError`` when the pieces are not numbered from one in order.
+    ///   number is not a YAML integer within 32 bits, a text is null, a value is
+    ///   written with a YAML anchor, alias or merge key, a piece's cuts do not divide
+    ///   its lines, or the parts, free pieces, thresholds or language are not shaped as
+    ///   a work's must be; ``CorpusError`` when the pieces are not numbered from one in
+    ///   order.
     public static func decodeWork(_ yaml: String) throws -> Work {
         let work = try assembleWork(yaml)
         try validate(work.pieces)
@@ -79,10 +80,10 @@ extension WorkCorpus {
             for piece in part.pieces ?? [] {
                 pieces.append(
                     HeldPiece(
-                        number: try numbered(piece.id),
-                        title: piece.title,
-                        lines: piece.lines,
-                        partTitle: part.title,
+                        number: try numbered(piece.id.value),
+                        title: piece.title.value,
+                        lines: piece.lines.map(\.value),
+                        partTitle: part.title.value,
                         partShort: part.short,
                         partSummary: part.summary ?? "",
                         cutSizes: piece.cuts?.mapValues { $0.map(\.value) } ?? [:]
@@ -91,14 +92,14 @@ extension WorkCorpus {
             }
         }
         return try assemble(
-            language: work.language,
+            language: work.language.value,
             pieces: pieces,
             reading: HeldReading(
                 untouchedBelow: work.reading.untouchedBelow,
                 begunBelow: work.reading.begunBelow,
                 mostBelow: work.reading.mostBelow,
                 difficultWordScore: work.reading.difficultWordScore.value,
-                free: try work.reading.free.map(numbered)
+                free: try work.reading.free.map { try numbered($0.value) }
             )
         )
     }
