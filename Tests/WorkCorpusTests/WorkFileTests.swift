@@ -180,12 +180,12 @@ struct WorkFileTests {
         }
     }
 
-    @Test("a work file whose parts leave a gap is refused")
-    func heldToTheSameRules() throws {
-        let gapped = try workFixture().replacingOccurrences(of: "id: '2'", with: "id: '4'")
+    @Test("a work file whose pieces skip a number is refused as out of order")
+    func skippedPieceNumber() throws {
+        let skipped = try workFixture().replacingOccurrences(of: "id: '2'", with: "id: '4'")
 
         #expect(throws: WorkCorpus.CorpusError.outOfOrder(expected: 2, found: 4)) {
-            try WorkCorpus.decodeWork(gapped)
+            try WorkCorpus.decodeWork(skipped)
         }
     }
 }
