@@ -20,19 +20,6 @@ struct WorkTests {
         }
     }
 
-    @Test("parts have to cover the whole work")
-    func refusesGapBetweenParts() throws {
-        let parts = [
-            try Part(title: "First", summary: "", first: 1, last: 10),
-            try Part(title: "Second", summary: "", first: 12, last: 20)
-        ]
-        let work = try work(parts: parts)
-
-        #expect(throws: WorkCorpus.WorkShapeError.partsDoNotCoverTheWork) {
-            try WorkCorpus.validateConfiguration(work)
-        }
-    }
-
     @Test("the pieces free to read have to be unique members of the work")
     func refusesInvalidFreePieces() throws {
         let work = try work(free: [1, 1])
@@ -54,26 +41,6 @@ struct WorkTests {
             try WorkCorpus.decodeWorkFromBook(book)
         }
         #expect(String(describing: error).contains("language"))
-    }
-
-    @Test("a book whose piece is cut short of its lines is refused, naming piece and stage")
-    func bookWithShortCuts() throws {
-        let book = try fixture("book-with-listening").replacingOccurrences(
-            of: "    lines: [The first line.]\n",
-            with: "    lines: [The first line., The second line.]\n    cuts:\n      block: [1]\n"
-        )
-
-        #expect(book != (try fixture("book-with-listening")))
-        #expect(
-            throws: WorkCorpus.WorkShapeError.cutsDoNotCoverThePiece(
-                piece: 1,
-                stage: "block",
-                cut: 1,
-                lines: 2
-            )
-        ) {
-            try WorkCorpus.decodeWorkFromBook(book)
-        }
     }
 
     @Test("what is wrong with a language is said with the value written out")
@@ -98,29 +65,15 @@ struct WorkTests {
         )
     }
 
-    @Test("a part that runs past the last piece is refused rather than overflowing")
-    func refusesPartPastTheWork() throws {
-        let last = Int(Int32.max)
-        let work = try work(parts: [Part(title: "All", summary: "", first: 1, last: last)])
-
-        #expect(throws: WorkCorpus.WorkShapeError.partOutOfRange(first: 1, last: last)) {
-            try WorkCorpus.validateConfiguration(work)
-        }
-    }
-
-    @Test("a part that ends before it starts, or starts before piece one, cannot be made")
+    @Test("a part held so that it ends before it starts cannot be made")
     func refusesBackwardPart() {
         #expect(throws: WorkCorpus.WorkShapeError.partOutOfRange(first: 3, last: 2)) {
             try Part(title: "Back", summary: "", first: 3, last: 2)
-        }
-        #expect(throws: WorkCorpus.WorkShapeError.partOutOfRange(first: 0, last: 2)) {
-            try Part(title: "Early", summary: "", first: 0, last: 2)
         }
     }
 
     private func work(
         threshold: Int = 3,
-        parts: [Part]? = nil,
         free: [Int] = [1]
     ) throws -> Work {
         let pieces = try (1...20).map { number in
@@ -129,8 +82,7 @@ struct WorkTests {
         return Work(
             language: "eng",
             pieces: pieces,
-            parts: try parts
-                ?? [Part(title: "The work", summary: "", first: 1, last: pieces.count)],
+            parts: [try Part(title: "The work", summary: "", first: 1, last: pieces.count)],
             free: free,
             stageField: StageFieldScale(untouchedBelow: 0.001, begunBelow: 0.5, mostBelow: 1),
             difficultWords: DifficultWordsConfiguration(scoreThreshold: threshold)

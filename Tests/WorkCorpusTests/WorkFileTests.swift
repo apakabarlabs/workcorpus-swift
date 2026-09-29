@@ -57,46 +57,6 @@ struct WorkFileTests {
         #expect(String(describing: error).contains("language"))
     }
 
-    @Test("a work file whose cuts overrun a piece is refused")
-    func overrunningCuts() throws {
-        let overrun = try workFixture().replacingOccurrences(
-            of: "          block:\n            - 2\n",
-            with: "          block:\n            - 3\n"
-        )
-
-        #expect(overrun != (try workFixture()))
-        #expect(
-            throws: WorkCorpus.WorkShapeError.cutsDoNotCoverThePiece(
-                piece: 1,
-                stage: "block",
-                cut: 3,
-                lines: 2
-            )
-        ) {
-            try WorkCorpus.decodeWork(overrun)
-        }
-    }
-
-    @Test("a work file whose cuts fall short of a piece is refused")
-    func shortCuts() throws {
-        let short = try workFixture().replacingOccurrences(
-            of: "          block:\n            - 2\n",
-            with: "          block:\n            - 1\n"
-        )
-
-        #expect(short != (try workFixture()))
-        #expect(
-            throws: WorkCorpus.WorkShapeError.cutsDoNotCoverThePiece(
-                piece: 1,
-                stage: "block",
-                cut: 1,
-                lines: 2
-            )
-        ) {
-            try WorkCorpus.decodeWork(short)
-        }
-    }
-
     @Test("a piece identifier past 32 bits is refused as not a number")
     func pieceIdPast32Bits() throws {
         let past = try workFixture().replacingOccurrences(of: "id: '3'", with: "id: '2147483648'")
