@@ -43,7 +43,8 @@ struct WorkPiece: Decodable {
 extension WorkCorpus {
     /// A work-file piece identifier is not an integer.
     public enum WorkError: LocalizedError, Equatable {
-        /// A piece or free-piece identifier cannot be converted to its number.
+        /// A piece or free-piece identifier is not a number written as a work writes
+        /// one: plain decimal digits that fit in 32 bits, as ``Work`` describes.
         case pieceIsNotNumbered(String)
 
         /// Reader-facing description of the invalid identifier.
@@ -76,12 +77,9 @@ extension WorkCorpus {
         var pieces: [HeldPiece] = []
         for part in parts(of: work.sections) {
             for piece in part.pieces ?? [] {
-                guard let number = Int32(piece.id).map(Int.init) else {
-                    throw WorkError.pieceIsNotNumbered(piece.id)
-                }
                 pieces.append(
                     HeldPiece(
-                        number: number,
+                        number: try numbered(piece.id),
                         title: piece.title,
                         lines: piece.lines,
                         partTitle: part.title,
@@ -100,14 +98,16 @@ extension WorkCorpus {
                 begunBelow: work.reading.begunBelow,
                 mostBelow: work.reading.mostBelow,
                 difficultWordScore: work.reading.difficultWordScore.value,
-                free: try work.reading.free.map { number in
-                    guard let free = Int32(number).map(Int.init) else {
-                        throw WorkError.pieceIsNotNumbered(number)
-                    }
-                    return free
-                }
+                free: try work.reading.free.map(numbered)
             )
         )
+    }
+
+    private static func numbered(_ id: String) throws -> Int {
+        guard WholeNumber.isPlainDecimal(id), let number = Int32(id) else {
+            throw WorkError.pieceIsNotNumbered(id)
+        }
+        return Int(number)
     }
 
     private static func parts(of sections: [WorkSection]) -> [WorkSection] {

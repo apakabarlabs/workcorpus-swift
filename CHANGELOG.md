@@ -35,15 +35,15 @@
   an unknown or the `line` stage were ignored. A stage the work says nothing
   about, or a `cuts` of `null`, is still read line by line.
 - Every number a work carries — piece numbers, cut sizes, part bounds, free
-  pieces, the difficult-word threshold, and piece identifiers in a work file — is
-  a YAML integer that fits in 32 bits, written as plain decimal digits with an
-  optional `-` and no leading zero, so that every port reads the same work.
-  A larger value, a quoted string, a float, a boolean, null, a list or a mapping
-  in place of the number, or a number written with
-  `+`, a leading zero, as `-0`, with underscores, `0x`/`0o`/`0b` or as
-  sexagesimal `1:30` is
-  refused with `WorkShapeError.invalidNumber`, naming the field, such as
-  `pieces[0].cuts.block[1]`; a piece identifier past 32 bits is
+  pieces and the difficult-word threshold — is a YAML integer that fits in 32
+  bits, written as plain decimal digits with an optional `-` and no leading zero,
+  so that every port reads the same work. A larger value, a quoted string, a
+  float, a boolean, null, a list or a mapping in place of the number, or a number
+  written with `+`, a leading zero, as `-0`, with underscores, `0x`/`0o`/`0b` or
+  as sexagesimal `1:30` is refused with `WorkShapeError.invalidNumber`, naming
+  the field, such as `pieces[0].cuts.block[1]`. The piece and free-piece
+  identifiers of a work file are held to the same writing and the same 32 bits,
+  and one that is not, such as `'+3'`, `'03'` or `'-0'`, is refused with
   `WorkError.pieceIsNotNumbered`. `PieceAsset.number(inName:)` reads no number
   past 32 bits.
 - `Part.init` throws `WorkShapeError.partOutOfRange` for a part that starts before
