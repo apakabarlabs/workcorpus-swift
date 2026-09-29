@@ -72,8 +72,8 @@ public struct Work: Decodable, Sendable {
     ///
     /// - Throws: `DecodingError` when a field is missing or is not text where text
     ///   belongs; ``WorkCorpus/WorkShapeError`` naming the field when a number is not a
-    ///   whole number within 32 bits or a text is null, or when a piece or part is out
-    ///   of shape.
+    ///   whole number within 32 bits, a fraction is not written in plain digits, a text
+    ///   is null, or when a piece or part is out of shape.
     public init(from decoder: Decoder) throws {
         let values = try decoder.container(keyedBy: CodingKeys.self)
         language = try values.decode(Text.self, forKey: .language).value
@@ -217,10 +217,9 @@ extension WorkCorpus {
     ///
     /// - Throws: `DecodingError` when the document is not YAML, or a field is missing
     ///   or is not text where text belongs; ``WorkShapeError`` when a number is not a
-    ///   YAML integer within 32 bits, a fraction is not written in plain digits, a
-    ///   text is null, a key is repeated, a value is written with a YAML
-    ///   anchor, alias or merge key, a piece's cuts do not divide its lines, or the
-    ///   parts, free pieces,
+    ///   YAML integer within 32 bits, a fraction is not written in plain digits, a text
+    ///   is null, a key is repeated, a value is written with a YAML anchor, alias or
+    ///   merge key, a piece's cuts do not divide its lines, or the parts, free pieces,
     ///   thresholds or language are not shaped as a work's must be; ``CorpusError``
     ///   when the pieces are not numbered from one in order.
     public static func decodeWorkFromBook(_ yaml: String) throws -> Work {
