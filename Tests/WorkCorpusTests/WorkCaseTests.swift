@@ -64,18 +64,34 @@ struct WorkReadingCase: Decodable, Sendable {
     let free: [Int]?
     let bands: [Double]?
     let threshold: Int?
+    let language: String?
+    let cuts: [String: [Int]]?
+    let shortTitles: [String]?
+    let summaries: [String]?
 
     func check(_ work: Work) {
-        if let numbers { #expect(work.pieces.map(\.number) == numbers) }
-        if let titles { #expect(work.pieces.map(\.title) == titles) }
-        if let lines { #expect(work.pieces.first?.lines == lines) }
-        if let parts { #expect(work.parts.map { [$0.first, $0.last] } == parts) }
+        checkPieces(work.pieces)
+        checkParts(work.parts)
+        if let language { #expect(work.language == language) }
         if let free { #expect(work.free == free) }
         if let bands {
             let scale = work.stageField
             #expect([scale.untouchedBelow, scale.begunBelow, scale.mostBelow] == bands)
         }
         if let threshold { #expect(work.difficultWords.scoreThreshold == threshold) }
+    }
+
+    private func checkPieces(_ pieces: [Piece]) {
+        if let numbers { #expect(pieces.map(\.number) == numbers) }
+        if let titles { #expect(pieces.map(\.title) == titles) }
+        if let lines { #expect(pieces.first?.lines == lines) }
+        if let cuts { #expect(pieces.first?.cutSizes == cuts) }
+    }
+
+    private func checkParts(_ parts: [Part]) {
+        if let ranges = self.parts { #expect(parts.map { [$0.first, $0.last] } == ranges) }
+        if let shortTitles { #expect(parts.map(\.shortTitle) == shortTitles) }
+        if let summaries { #expect(parts.map(\.summary) == summaries) }
     }
 }
 

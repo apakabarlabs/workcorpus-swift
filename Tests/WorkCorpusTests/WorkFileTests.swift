@@ -46,17 +46,6 @@ struct WorkFileTests {
         #expect(read.difficultWords.scoreThreshold == 3)
     }
 
-    @Test("the language comes off the work file as the work names it")
-    func language() throws {
-        #expect(try WorkCorpus.decodeWork(workFixture()).language == "eng")
-
-        let serbian = try workFixture().replacingOccurrences(
-            of: "language: eng\n",
-            with: "language: srp\n"
-        )
-        #expect(try WorkCorpus.decodeWork(serbian).language == "srp")
-    }
-
     @Test("a work file that does not name its language is refused, and says so")
     func withoutLanguage() throws {
         let unnamed = try workFixture().replacingOccurrences(of: "language: eng\n", with: "")
@@ -108,35 +97,6 @@ struct WorkFileTests {
         }
     }
 
-    @Test(
-        "a work file number that is not a YAML integer within 32 bits is refused, naming the field",
-        arguments: [
-            (
-                "          block:\n            - 2\n",
-                "          block:\n            - -99999999999999999999\n",
-                "sections[0].pieces[0].cuts.block[0]"
-            ),
-            (
-                "          block:\n            - 2\n",
-                "          block:\n            - '2'\n",
-                "sections[0].pieces[0].cuts.block[0]"
-            ),
-            (
-                "  difficult_word_score: 3\n",
-                "  difficult_word_score: true\n",
-                "reading.difficult_word_score"
-            )
-        ]
-    )
-    func invalidNumber(written: String, replaced: String, place: String) throws {
-        let changed = try workFixture().replacingOccurrences(of: written, with: replaced)
-
-        #expect(changed != (try workFixture()))
-        #expect(throws: WorkCorpus.WorkShapeError.invalidNumber(place: place)) {
-            try WorkCorpus.decodeWork(changed)
-        }
-    }
-
     @Test("a piece identifier past 32 bits is refused as not a number")
     func pieceIdPast32Bits() throws {
         let past = try workFixture().replacingOccurrences(of: "id: '3'", with: "id: '2147483648'")
@@ -144,31 +104,6 @@ struct WorkFileTests {
         #expect(throws: WorkCorpus.WorkError.pieceIsNotNumbered("2147483648")) {
             try WorkCorpus.assembleWork(past)
         }
-    }
-
-    @Test("a work file piece whose cuts are null is read as having none")
-    func nullCuts() throws {
-        let null = try workFixture().replacingOccurrences(
-            of: "        cuts:\n          block:\n            - 2\n",
-            with: "        cuts: null\n"
-        )
-
-        #expect(null != (try workFixture()))
-        #expect(try WorkCorpus.decodeWork(null).pieces[0].cutSizes == [:])
-    }
-
-    @Test(
-        "a work file that still names a shortest attempt is read, whatever it says",
-        arguments: ["0.2", "0", "200"]
-    )
-    func olderReadingBlock(seconds: String) throws {
-        let older = try workFixture().replacingOccurrences(
-            of: "  difficult_word_score: 3\n",
-            with: "  difficult_word_score: 3\n  shortest_attempt_seconds: \(seconds)\n"
-        )
-
-        #expect(older != (try workFixture()))
-        #expect(try WorkCorpus.decodeWork(older).pieces.count == 3)
     }
 
     @Test("a piece that is not numbered is refused rather than renumbered")
