@@ -55,8 +55,9 @@ or is built in code with `WorkCorpus.work` from values the app already holds.
 - A piece's cuts are checked when the piece is made or decoded: the `block`
   sizes must each be at least one and add up to exactly the piece's number of
   lines, and cuts for `line` or for a stage the library does not know are
-  refused. The errors, `cutsDoNotCoverThePiece`, `emptyCut`, `cutsForLineStage`
-  and `cutsForUnknownStage`, name the piece and the stage. Until now sizes past
+  refused. The errors, `WorkShapeError.cutsDoNotCoverThePiece`,
+  `WorkShapeError.emptyCut`, `WorkShapeError.cutsForLineStage` and
+  `WorkShapeError.cutsForUnknownStage`, name the piece and the stage. Until now sizes past
   the end of the piece were cut short, a shortfall got one more group of the
   remaining lines, and cuts for `line` or an unknown stage were ignored. A piece
   without `cuts`, or with `cuts: null`, is still read line by line. So
@@ -140,12 +141,16 @@ or is built in code with `WorkCorpus.work` from values the app already holds.
   as `"5"`, a boolean, null, a fraction, a value past 32 bits or `-0` is refused
   with `WorkShapeError.invalidNumber`, naming the field. The value is read as a
   `Decimal`, not a binary float, so `5.000000000000000001` and
-  `4.9999999999999999999` are fractions and refused. A number of 38 or more
-  significant digits, trailing zeros aside, is refused: a whole number with
-  `invalidNumber`, a progress bound with `invalidFraction`. `Decimal` keeps only
-  about 38 digits and Foundation drops the rest before the library sees the
-  number, so a longer one is judged by what is kept:
-  `5.00000000000000000000000000000000000001` reads as 5. A progress bound a
+  `4.9999999999999999999` are fractions and refused. Before the library sees a
+  number, Foundation cuts it, without rounding, to the significant digits
+  `Decimal` can hold: the first 39 when those 39, read as a whole number, are at
+  most 2^128 − 1 (about 3.4 × 10^38), otherwise the first 38. The library then
+  refuses the number if what was kept has 38 or more significant digits,
+  trailing zeros aside: a whole number with `invalidNumber`, a progress bound
+  with `invalidFraction`. So `5.0000000000000000000000000000000000001` (38
+  digits) and `1.00000000000000000000000000000000000001` (39 digits, all kept)
+  are refused, while `5.00000000000000000000000000000000000001` (39 digits, cut
+  to a 5 and 37 zeros) reads as 5. A progress bound a
   `Double` cannot hold, such as `1e-400` or `1e400`, is refused with
   `invalidFraction`. A JSON syntax error is `JSONDecoder`'s own `DecodingError`.
   A key repeated in one JSON object is not refused; `JSONDecoder` keeps one of its
@@ -160,8 +165,9 @@ or is built in code with `WorkCorpus.work` from values the app already holds.
 
 - `PieceAsset.name` writes the stem as it is. It was used as a format string, so
   a stem containing `%` produced a wrong name.
-- `PieceAsset.name` and `sharedReading` write a number that does not fit in 32
-  bits in full; it was written wrongly.
+- `PieceAsset.name` and `PieceAsset.sharedReading`, which names the file of a
+  line attempt a reader shares, such as `s004-l09-then-beauty-is-sniggered`,
+  write a number that does not fit in 32 bits in full; it was written wrongly.
 - A work without pieces is refused with `WorkShapeError.invalidFreePieces`,
   since no piece of it can be free. Until now its free list could name piece 1.
 
