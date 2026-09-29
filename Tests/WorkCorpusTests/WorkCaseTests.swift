@@ -12,6 +12,7 @@ struct WorkCase: Decodable, Sendable, CustomTestStringConvertible {
     let error: String?
     let refused: String?
     let read: WorkReadingCase?
+    let breaks: String?
 
     var testDescription: String { name }
 
@@ -23,6 +24,7 @@ struct WorkCase: Decodable, Sendable, CustomTestStringConvertible {
         case error
         case refused
         case read
+        case breaks
     }
 
     static func all() throws -> [Self] {
@@ -31,12 +33,17 @@ struct WorkCase: Decodable, Sendable, CustomTestStringConvertible {
 
     func document() throws -> String {
         let base = source == "json-book" ? try WorkCases.shared().jsonBook : try fixture(source)
-        guard let replace else { return base }
-        #expect(
-            base.components(separatedBy: replace).count == 2,
-            "\(replace) is not in \(source) once"
-        )
-        return base.replacingOccurrences(of: replace, with: with ?? "")
+        var document = base
+        if let replace {
+            #expect(
+                base.components(separatedBy: replace).count == 2,
+                "\(replace) is not in \(source) once"
+            )
+            document = base.replacingOccurrences(of: replace, with: with ?? "")
+        }
+        guard let breaks else { return document }
+        return document.split(separator: "\n", omittingEmptySubsequences: false)
+            .joined(separator: breaks)
     }
 
     func read(_ document: String) throws -> Work {
@@ -123,12 +130,16 @@ struct WorkCaseTests {
         arguments: try WorkCase.all()
     )
     func sharedCase(_ shared: WorkCase) throws {
-        #expect((shared.refused == nil) == (shared.error == nil), "a refusal names its error")
-        #expect((shared.refused == nil) != (shared.read == nil), "a case is read or refused")
+        #expect((shared.error == nil) != (shared.read == nil), "a case is read or refused")
+        #expect(shared.error != nil || shared.refused == nil, "only a refusal says a text")
+        #expect(
+            shared.refused != nil || shared.error == nil || shared.error == "documentError",
+            "a refusal says its text, unless it is the parser's own"
+        )
         let document = try shared.document()
         do {
             let work = try shared.read(document)
-            #expect(shared.refused == nil, "read, though the case expects: \(shared.refused ?? "")")
+            #expect(shared.error == nil, "read, though the case expects \(shared.error ?? "")")
             shared.read?.check(work)
         } catch let refusal as WorkCorpus.WorkShapeError {
             expect(refusal, named: shared)
@@ -136,6 +147,11 @@ struct WorkCaseTests {
             expect(refusal, named: shared)
         } catch let refusal as WorkCorpus.WorkError {
             expect(refusal, named: shared)
+        } catch let refusal as DecodingError {
+            #expect(shared.error == "documentError", "refused by the parser: \(refusal)")
+            if let refused = shared.refused, case let .dataCorrupted(context) = refusal {
+                #expect(context.debugDescription == refused)
+            }
         }
     }
 

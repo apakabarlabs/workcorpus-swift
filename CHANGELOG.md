@@ -78,9 +78,19 @@
   a work has several of the YAML problems — an anchor, alias or merge key, an
   explicit tag, a repeated key — the one that comes first in the document is
   reported, and an alias with no anchor, such as `*nowhere`, is refused as
-  `yamlReference` naming its field. Keys equal only under Unicode canonical
-  equivalence count as one key here and as two in the Kotlin port, a rare
-  difference no case pins. A key the work does not know is skipped, in YAML and
+  `yamlReference` naming its field, or the enclosing mapping when it stands as a
+  key. A problem before a syntax error is reported rather than the syntax error;
+  only a document with none before it is refused with `DecodingError`. A key that
+  is a list or a mapping is refused with `DecodingError`, saying the mapping has
+  a key that is not text. Lines are counted as the YAML parser counts them, broken
+  by `\n`, `\r\n`, `\r`, NEL, LS or PS. Yams gives up at its first mapping with a
+  repeat and offers no events, so the first problem is found by bisecting runs of
+  leading lines; after eight runs in a row that cannot be read on their own, as
+  inside a long flow list, the problem found so far is reported, at worst the one
+  Yams reported. Two differences from the Kotlin port no case pins: within one
+  flow collection a later problem may be named before an earlier tag or anchor,
+  and keys equal only under Unicode canonical equivalence count as one key here
+  and as two there. A key the work does not know is skipped, in YAML and
   JSON alike. A key repeated in one JSON object is not refused: `JSONDecoder`
   keeps one of its values before a `Decodable` type sees the object, and which
   one may differ between the ports.
@@ -113,9 +123,11 @@
 - A value written with an explicit YAML tag — `!!str 3`, `!!int 3`, `!poem`, the
   non-specific `!`, or a tag on a list or mapping — is refused with the new
   `WorkShapeError.explicitTag`, naming the field, so that `score_threshold:
-  !!str 3` no longer reads as 3. Yams cannot tell `!!str` on a quoted value or on
-  a key from no tag at all, so those two alone are read as if untagged, while the
-  Kotlin port refuses them: a rare difference no case pins.
+  !!str 3` no longer reads as 3. Yams cannot tell `!!str` on a quoted value, or
+  `!!str` or `!` on a key, from no tag at all, since it gives a quoted value the
+  str tag itself and settles every key's tag before the library sees the key; so
+  those alone are read as if untagged, while the Kotlin port refuses them: a rare
+  difference no case pins.
 - `PieceAsset` compares a stem and a file name in Unicode normalization form C,
   and reads only the ASCII digits `0` to `9` as the digits of a piece number or
   of a numeric voice suffix. A name such as `s-12三` now reads as piece 12, and

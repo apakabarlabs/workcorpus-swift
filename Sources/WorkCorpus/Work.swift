@@ -37,8 +37,12 @@ import Yams
 /// or not, is refused with ``WorkCorpus/WorkShapeError/yamlReference(place:)``, since
 /// YAML readers do not resolve them alike. An explicit YAML tag, such as `!!str 3`, is
 /// refused with ``WorkCorpus/WorkShapeError/explicitTag(place:)``, so that no value reads
-/// as another kind than it is written; Yams cannot tell `!!str` on a quoted value or on
-/// a key from no tag at all, so those two alone are read as if untagged.
+/// as another kind than it is written; Yams cannot tell `!!str` on a quoted value, or
+/// `!!str` or `!` on a key, from no tag at all, so those alone are read as if untagged.
+/// Of several such problems, or a repeated key, the one first in the document is
+/// reported, even before a syntax error further on; within one flow collection a later
+/// one may be named first. A key that is a list or a mapping is refused with
+/// `DecodingError`.
 public struct Work: Decodable, Sendable {
     /// Language the work is written in, as the work names it: a language tag such as
     /// `en`, `eng` or `en-GB`.

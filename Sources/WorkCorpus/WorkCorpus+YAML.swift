@@ -2,6 +2,8 @@ import Foundation
 import Yams
 
 extension WorkCorpus {
+    static let unreadableRunsToStepOver = 8
+
     static func decodeYAML<T: Decodable>(_ type: T.Type, from yaml: String) throws -> T {
         try decoding {
             let parser: Parser
@@ -10,9 +12,11 @@ extension WorkCorpus {
                 parser = try Parser(yaml: yaml, resolver: Resolver.basic.appending(.merge))
                 root = try parser.singleRoot() ?? ""
             } catch let error as YamlError {
-                if let problem = problem(in: yaml, refusedWith: error) {
-                    throw firstProblem(in: yaml, whole: problem)
+                let lines = YAMLLines(yaml)
+                if let problem = problem(in: lines, refusedWith: error) {
+                    throw firstProblem(in: lines, after: 0, by: lines.count, found: problem)
                 }
+                if let earlier = problem(in: lines, before: error) { throw earlier }
                 throw DecodingError.dataCorrupted(
                     .init(
                         codingPath: [],
@@ -30,24 +34,19 @@ extension WorkCorpus {
 
     private enum Leading {
         case clean
-        case refused(WorkShapeError)
+        case refused(any Error)
         case unreadable
     }
 
-    private static func firstProblem(in yaml: String, whole: WorkShapeError) -> WorkShapeError {
-        let lines = yaml.split(separator: "\n", omittingEmptySubsequences: false)
-        return firstProblem(in: lines, after: 0, by: lines.count, found: whole)
-    }
-
     private static func firstProblem(
-        in lines: [Substring],
+        in lines: YAMLLines,
         after clean: Int,
         by refused: Int,
-        found: WorkShapeError
-    ) -> WorkShapeError {
+        found: any Error
+    ) -> any Error {
         guard refused - clean > 1 else { return found }
         let middle = (clean + refused) / 2
-        for count in middle..<refused {
+        for count in middle..<min(refused, middle + unreadableRunsToStepOver) {
             switch leading(lines, count) {
             case .refused(let problem):
                 return firstProblem(in: lines, after: clean, by: middle, found: problem)
@@ -57,63 +56,86 @@ extension WorkCorpus {
                 continue
             }
         }
-        return firstProblem(in: lines, after: clean, by: middle, found: found)
+        return found
     }
 
-    private static func leading(_ lines: [Substring], _ count: Int) -> Leading {
-        let text = lines.prefix(count).joined(separator: "\n")
+    private static func problem(in lines: YAMLLines, before error: YamlError) -> (any Error)? {
+        let mark: Mark
+        switch error {
+        case let .scanner(_, _, found, _), let .parser(_, _, found, _),
+            let .composer(_, _, found, _):
+            mark = found
+        default:
+            return nil
+        }
+        let before = min(mark.line - 1, lines.count)
+        for count in stride(from: before, to: max(0, before - unreadableRunsToStepOver), by: -1) {
+            switch leading(lines, count) {
+            case .refused(let problem):
+                return firstProblem(in: lines, after: 0, by: count, found: problem)
+            case .clean:
+                return nil
+            case .unreadable:
+                continue
+            }
+        }
+        return nil
+    }
+
+    private static func leading(_ lines: YAMLLines, _ count: Int) -> Leading {
+        let text = lines.leading(count)
         do {
             let parser = try Parser(yaml: text, resolver: Resolver.basic.appending(.merge))
             try withExtendedLifetime(parser) {
                 try refuseReferences(in: try parser.singleRoot() ?? "", at: "")
             }
             return .clean
-        } catch let shape as WorkShapeError {
-            return .refused(shape)
         } catch let error as YamlError {
-            return problem(in: text, refusedWith: error).map(Leading.refused) ?? .unreadable
+            let problem = problem(in: YAMLLines(text), refusedWith: error)
+            return problem.map(Leading.refused) ?? .unreadable
         } catch {
-            return .unreadable
+            return .refused(error)
         }
     }
 
-    private static func problem(in yaml: String, refusedWith error: YamlError) -> WorkShapeError? {
+    private static func problem(
+        in lines: YAMLLines,
+        refusedWith error: YamlError
+    ) -> WorkShapeError? {
         switch error {
         case let .duplicatedKeysInMapping(duplicates, _):
             duplicates.sorted().first.map(WorkShapeError.repeatedKey)
         case let .composer(_, problem, mark, _) where problem == "found undefined alias":
-            .yamlReference(place: aliasPlace(in: yaml, at: mark))
+            .yamlReference(place: aliasPlace(in: lines, at: mark))
         default:
             nil
         }
     }
 
-    private static func aliasPlace(in yaml: String, at mark: Mark) -> String {
-        var lines = yaml.split(separator: "\n", omittingEmptySubsequences: false).map(String.init)
-        let scalars = Array(lines[mark.line - 1].unicodeScalars)
-        let start = mark.column - 1
-        let ending = " \t,]}".unicodeScalars
-        let end = scalars[start...].firstIndex { ending.contains($0) } ?? scalars.count
-        var written = String.UnicodeScalarView(scalars[..<start])
+    private static func aliasPlace(in lines: YAMLLines, at mark: Mark) -> String {
+        guard let start = lines.index(line: mark.line, column: mark.column) else {
+            return "top level"
+        }
+        let ending = YAMLLines.breaks.union(" \t,]}".unicodeScalars)
+        let end = lines.scalars[start...].firstIndex { ending.contains($0) } ?? lines.scalars.count
+        var written = String.UnicodeScalarView(lines.scalars[..<start])
         written.append(contentsOf: "~".unicodeScalars)
-        written.append(contentsOf: scalars[end...])
-        lines[mark.line - 1] = String(written)
+        written.append(contentsOf: lines.scalars[end...])
         do {
-            let parser = try Parser(yaml: lines.joined(separator: "\n"), resolver: .basic)
-            let root = try parser.singleRoot() ?? ""
-            return place(of: mark, in: root, at: "") ?? "top level"
+            let parser = try Parser(yaml: String(written), resolver: .basic)
+            return place(of: mark, in: try parser.singleRoot() ?? "", at: "") ?? "top level"
         } catch {
             return "top level"
         }
     }
 
     private static func place(of mark: Mark, in node: Node, at place: String) -> String? {
-        if node.mark?.line == mark.line, node.mark?.column == mark.column {
-            return place.isEmpty ? "top level" : place
-        }
+        let shown = place.isEmpty ? "top level" : place
+        if node.mark?.line == mark.line, node.mark?.column == mark.column { return shown }
         switch node {
         case .mapping(let mapping):
             for (key, value) in mapping {
+                if key.mark?.line == mark.line, key.mark?.column == mark.column { return shown }
                 let name = key.string ?? ""
                 let entry = place.isEmpty ? name : "\(place).\(name)"
                 if let found = Self.place(of: mark, in: value, at: entry) { return found }
@@ -140,7 +162,10 @@ extension WorkCorpus {
                 guard key.anchor == nil, key.string != "<<" else {
                     throw WorkShapeError.yamlReference(place: shown)
                 }
-                let name = key.string ?? ""
+                guard let name = key.scalar?.string else {
+                    let text = "The work's \(shown) has a key that is not text."
+                    throw DecodingError.dataCorrupted(.init(codingPath: [], debugDescription: text))
+                }
                 let entry = place.isEmpty ? name : "\(place).\(name)"
                 guard key.scalar?.tag.rawValue == Tag.Name.str.rawValue else {
                     throw WorkShapeError.explicitTag(place: entry)
