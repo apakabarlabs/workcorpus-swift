@@ -13,9 +13,9 @@ import Yams
 /// prefixes and sexagesimal `1:30` are refused, so that every port reads a number the
 /// same way.
 ///
-/// A work is written out in full. A YAML anchor, an alias or a `<<` merge key is
-/// refused with ``WorkCorpus/WorkShapeError/yamlReference(place:)``, since YAML
-/// readers do not resolve them alike.
+/// A work is written out in full. A YAML anchor, an alias or a `<<` merge key, quoted
+/// or not, is refused with ``WorkCorpus/WorkShapeError/yamlReference(place:)``, since
+/// YAML readers do not resolve them alike.
 public struct Work: Decodable, Sendable {
     /// Language the work is written in, as the work names it: a language tag such as
     /// `en`, `eng` or `en-GB`.
