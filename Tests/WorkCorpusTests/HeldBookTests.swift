@@ -39,9 +39,11 @@ struct HeldBookTests {
         )
     ]
 
+    private let writing = Writing(language: "eng", interiorMarks: "'’-", elisions: [:])
+
     @Test("the pieces come out numbered and in the order they are held")
     func heldPieces() throws {
-        let work = try WorkCorpus.assemble(language: "eng", pieces: pieces, reading: reading)
+        let work = try WorkCorpus.assemble(writing: writing, pieces: pieces, reading: reading)
 
         #expect(work.pieces.map(\.number) == [1, 2, 3])
         #expect(work.pieces[1].lines == ["When forty winters shall besiege thy brow,"])
@@ -50,7 +52,7 @@ struct HeldBookTests {
 
     @Test("a part covers the pieces filed under it and keeps its two names")
     func parts() throws {
-        let work = try WorkCorpus.assemble(language: "eng", pieces: pieces, reading: reading)
+        let work = try WorkCorpus.assemble(writing: writing, pieces: pieces, reading: reading)
 
         #expect(work.parts.map(\.title) == ["The Procreation Sonnets", "The Fair Youth"])
         #expect(work.parts[0].shortTitle == "The Procreation")
@@ -61,7 +63,7 @@ struct HeldBookTests {
 
     @Test("the reading thresholds come off the reading it was given")
     func thresholds() throws {
-        let work = try WorkCorpus.assemble(language: "eng", pieces: pieces, reading: reading)
+        let work = try WorkCorpus.assemble(writing: writing, pieces: pieces, reading: reading)
 
         #expect(work.free == [1, 2])
         #expect(work.stageField.band(for: 0.0005) == .untouched)
@@ -82,7 +84,7 @@ struct HeldBookTests {
                 )
             ]
 
-        let work = try WorkCorpus.assemble(language: "eng", pieces: returning, reading: reading)
+        let work = try WorkCorpus.assemble(writing: writing, pieces: returning, reading: reading)
 
         #expect(work.parts.map(\.pieces) == [1...2, 3...3, 4...4])
     }
@@ -92,21 +94,67 @@ struct HeldBookTests {
         let outOfOrder = [pieces[1], pieces[0], pieces[2]]
 
         #expect(throws: WorkCorpus.CorpusError.outOfOrder(expected: 1, found: 2)) {
-            try WorkCorpus.work(language: "eng", pieces: outOfOrder, reading: reading)
+            try WorkCorpus.work(
+                language: "eng",
+                interiorMarks: "'’-",
+                elisions: [:],
+                pieces: outOfOrder,
+                reading: reading
+            )
         }
     }
 
     @Test("the language is the one the work was held with, whatever it is")
     func language() throws {
-        let work = try WorkCorpus.work(language: "srp", pieces: pieces, reading: reading)
+        let work = try WorkCorpus.work(
+            language: "srp",
+            interiorMarks: "-",
+            elisions: [:],
+            pieces: pieces,
+            reading: reading
+        )
 
         #expect(work.language == "srp")
+    }
+
+    @Test("the marks inside a word and the elisions are the ones the work was held with")
+    func heldWriting() throws {
+        let work = try WorkCorpus.work(
+            language: "eng",
+            interiorMarks: "'’-",
+            elisions: ["tatter’d": ["tattered"], "th’": ["the", "thee"]],
+            pieces: pieces,
+            reading: reading
+        )
+
+        #expect(work.interiorMarks == "'’-")
+        #expect(work.elisions == ["tatter’d": ["tattered"], "th’": ["the", "thee"]])
+    }
+
+    @Test("a work held with no marks inside a word and no elisions is read as such")
+    func noWriting() throws {
+        let work = try WorkCorpus.work(
+            language: "eng",
+            interiorMarks: "",
+            elisions: [:],
+            pieces: pieces,
+            reading: reading
+        )
+
+        #expect(work.interiorMarks.isEmpty)
+        #expect(work.elisions.isEmpty)
     }
 
     @Test("a work held without naming its language is refused")
     func unnamedLanguage() {
         #expect(throws: WorkCorpus.WorkShapeError.invalidLanguage(" ")) {
-            try WorkCorpus.work(language: " ", pieces: pieces, reading: reading)
+            try WorkCorpus.work(
+                language: " ",
+                interiorMarks: "'’-",
+                elisions: [:],
+                pieces: pieces,
+                reading: reading
+            )
         }
     }
 }

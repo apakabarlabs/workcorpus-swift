@@ -91,7 +91,13 @@ struct ReadingStageTests {
                 lines: 14
             )
         ) {
-            try WorkCorpus.work(language: "eng", pieces: [short], reading: reading)
+            try WorkCorpus.work(
+                language: "eng",
+                interiorMarks: "'’-",
+                elisions: [:],
+                pieces: [short],
+                reading: reading
+            )
         }
     }
 

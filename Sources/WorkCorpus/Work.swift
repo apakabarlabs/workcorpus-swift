@@ -50,6 +50,18 @@ public struct Work: Decodable, Sendable {
     /// It arrives with the work rather than being assumed, because the same reading
     /// mechanics carry works in other languages.
     public let language: String
+    /// Characters that stay inside a word once the word has begun, as the work's script
+    /// uses them, such as an apostrophe or a hyphen; each character of the text is one
+    /// such mark, and an empty text names none.
+    ///
+    /// Like the language, it arrives with the work: which marks join a word belongs to
+    /// the writing the work is printed in.
+    public let interiorMarks: String
+    /// The elided spellings the work prints, each mapped to the full forms it stands for,
+    /// such as `tatter’d` to `tattered`; empty for a work that prints none.
+    ///
+    /// Spellings and full forms are kept as the work writes them.
+    public let elisions: [String: [String]]
     /// Reading pieces, expected to be numbered from one and ordered by number.
     public let pieces: [Piece]
     /// Parts, expected to cover the pieces consecutively and exactly once.
@@ -63,6 +75,8 @@ public struct Work: Decodable, Sendable {
 
     private enum CodingKeys: String, CodingKey {
         case language
+        case interiorMarks = "interior_marks"
+        case elisions
         case pieces
         case parts
         case free
@@ -71,14 +85,16 @@ public struct Work: Decodable, Sendable {
     }
 
     init(
-        language: String,
+        writing: Writing,
         pieces: [Piece],
         parts: [Part],
         free: [Int],
         stageField: StageFieldScale,
         difficultWords: DifficultWordsConfiguration
     ) {
-        self.language = language
+        language = writing.language
+        interiorMarks = writing.interiorMarks
+        elisions = writing.elisions
         self.pieces = pieces
         self.parts = parts
         self.free = free
@@ -88,13 +104,17 @@ public struct Work: Decodable, Sendable {
 
     /// Decodes a work without validating the relationships between its fields.
     ///
-    /// - Throws: `DecodingError` when a field is missing or is not text where text
-    ///   belongs; ``WorkCorpus/WorkShapeError`` naming the field when a number is not a
-    ///   whole number within 32 bits, a fraction is not written in plain digits, a text
-    ///   is null, or when a piece or part is out of shape.
+    /// - Throws: `DecodingError` when a field is missing, is not text where text
+    ///   belongs, or is null or of another kind where a list or a mapping belongs, such
+    ///   as `elisions`; ``WorkCorpus/WorkShapeError`` naming the field when a number is
+    ///   not a whole number within 32 bits, a fraction is not written in plain digits, a
+    ///   text is null, or when a piece or part is out of shape.
     public init(from decoder: Decoder) throws {
         let values = try decoder.container(keyedBy: CodingKeys.self)
         language = try values.decode(Text.self, forKey: .language).value
+        interiorMarks = try values.decode(Text.self, forKey: .interiorMarks).value
+        elisions = try values.decode([String: [Text]].self, forKey: .elisions)
+            .mapValues { $0.map(\.value) }
         pieces = try values.decode([Piece].self, forKey: .pieces)
         parts = try values.decode([Part].self, forKey: .parts)
         free = try values.decode([WholeNumber].self, forKey: .free).map(\.value)
@@ -104,6 +124,12 @@ public struct Work: Decodable, Sendable {
             forKey: .difficultWords
         )
     }
+}
+
+struct Writing {
+    let language: String
+    let interiorMarks: String
+    let elisions: [String: [String]]
 }
 
 /// Configuration for classifying repeatedly missed words.
@@ -243,8 +269,9 @@ extension WorkCorpus {
 
     /// Decodes an assembled book YAML document and validates the resulting work.
     ///
-    /// - Throws: `DecodingError` when the document is not YAML, or a field is missing
-    ///   or is not text where text belongs; ``WorkShapeError`` when a number is not a
+    /// - Throws: `DecodingError` when the document is not YAML, or a field is missing,
+    ///   is not text where text belongs, or is null or of another kind where a list or a
+    ///   mapping belongs; ``WorkShapeError`` when a number is not a
     ///   YAML integer within 32 bits, a fraction is not written in plain digits, a text
     ///   is null, a key is repeated, a value is written with a YAML anchor, alias or
     ///   merge key, a piece's cuts do not divide its lines, or the parts, free pieces,

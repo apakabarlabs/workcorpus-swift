@@ -19,13 +19,18 @@ from disagreeing about what is written.
   is the work's own shape. A stage the work says nothing about is read line by
   line.
 - **A part**, a run of pieces the work is divided into.
+- **How the work is written**: its language, the marks that stay inside a word
+  once it has begun (`'’-` in English verse), and the full forms of each elided
+  spelling it prints (`tatter’d` for `tattered`). They arrive with the work, from
+  its `language`, `interior_marks` and `elisions` keys, since the same reading
+  serves books in other languages.
 - **What a reading is held to**: the score a word counts as difficult at and the
   bands a stage is coloured by.
 - **A reader's standing** in the stages of one piece.
 
-What it does not hold is how long a piece should be, or how many pieces a work
-has. Those belong to the work file, and a library that knew them could serve
-only one book.
+What it does not hold is how long a piece should be, how many pieces a work
+has, or which marks and elisions a language uses. Those belong to the work file,
+and a library that knew them could serve only one book.
 
 ## Use
 
@@ -33,6 +38,8 @@ only one book.
 let work = try WorkCorpus.decodeWork(yaml)
 let piece = work.pieces[0]
 let firstBlock = piece.cuts(for: .block)[0]
+let marks = work.interiorMarks
+let fullForms = work.elisions["tatter’d"] ?? []
 ```
 
 `decodeWork` reads a work file and `decodeWorkFromBook` an assembled book. Both

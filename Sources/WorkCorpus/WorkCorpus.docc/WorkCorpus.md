@@ -24,12 +24,35 @@ let firstPiece = work.pieces[0]
 let lineCuts = firstPiece.cuts(for: .line)
 ```
 
+## Read what the writing keeps
+
+A work names how it is written, and the library holds no language of its own.
+``Work/language`` is the language tag, ``Work/interiorMarks`` the characters that stay
+inside a word once it has begun, such as `'’-` in English verse, and
+``Work/elisions`` each elided spelling the work prints with the full forms it stands
+for, such as `tatter’d` for `tattered`. The two come from the `interior_marks` and
+`elisions` keys beside `language`, and a work needs both: a work that keeps no mark
+inside a word writes `interior_marks: ""`, and one that prints no elision writes
+`elisions: {}`. A null mark text or a null full form is refused with
+``WorkCorpus/WorkShapeError/nullText(place:)``, naming the field, such as
+`elisions.th’[0]`; a missing key, or a value of another kind, such as a list of marks
+or elisions left null, is refused with `DecodingError`.
+
+```swift
+let work = try WorkCorpus.decodeWork(yaml)
+let marks = CharacterSet(charactersIn: work.interiorMarks)
+let fullForms = work.elisions["tatter’d"] ?? []
+```
+
 The nested work-file format groups pieces under sections and keeps reading settings
 in one `reading` mapping:
 
 ```yaml
 slug: poems
 language: eng
+interior_marks: "'’-"
+elisions:
+  tatter’d: [tattered]
 title: Poems
 reading:
   untouched_below: 0.001
@@ -50,6 +73,8 @@ The assembled book format supplies the resulting pieces and parts directly:
 
 ```yaml
 language: eng
+interior_marks: "'’-"
+elisions: {}
 pieces:
   - number: 1
     title: First poem

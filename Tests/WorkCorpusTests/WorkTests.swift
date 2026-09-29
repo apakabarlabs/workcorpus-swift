@@ -1,9 +1,12 @@
+import Foundation
 import Testing
 import Yams
 
 @testable import WorkCorpus
 
 struct WorkTests {
+    private static let elisions = "elisions:\n  tatter’d: [tattered]\n  th’: [the]\n"
+
     @Test("configuration is validated from the YAML model itself")
     func acceptsConfiguration() throws {
         let book = try YAMLDecoder().decode(Work.self, from: fixture("book-with-listening"))
@@ -43,6 +46,62 @@ struct WorkTests {
         #expect(String(describing: error).contains("language"))
     }
 
+    @Test(
+        "a book that leaves out the marks inside a word or its elisions is refused, naming the key",
+        arguments: ["interior_marks: \"'’-\"\n", Self.elisions]
+    )
+    func bookWithoutWritingKey(_ left: String) throws {
+        let book = try fixture("book-with-listening").replacingOccurrences(of: left, with: "")
+
+        #expect(book != (try fixture("book-with-listening")))
+        let error = #expect(throws: DecodingError.self) {
+            try WorkCorpus.decodeWorkFromBook(book)
+        }
+        guard case let .keyNotFound(key, _) = error else {
+            Issue.record("refused with \(String(describing: error)) rather than a missing key")
+            return
+        }
+        #expect(left.hasPrefix(key.stringValue + ":"))
+    }
+
+    @Test(
+        "a book whose marks or elisions are not the kind of value they hold is refused there",
+        arguments: [
+            ("interior_marks: \"'’-\"\n", "interior_marks: [\"'\"]\n", "interior_marks"),
+            (Self.elisions, "elisions:\n  - th’\n", "elisions"),
+            (Self.elisions, "elisions: null\n", "elisions"),
+            ("  th’: [the]\n", "  th’: the\n", "elisions.th’")
+        ]
+    )
+    func bookWithWritingOfAnotherKind(_ written: String, _ wrong: String, _ place: String) throws {
+        let book = try fixture("book-with-listening").replacingOccurrences(of: written, with: wrong)
+
+        #expect(book != (try fixture("book-with-listening")))
+        let error = #expect(throws: DecodingError.self) {
+            try WorkCorpus.decodeWorkFromBook(book)
+        }
+        switch error {
+        case let .typeMismatch(_, context), let .valueNotFound(_, context):
+            #expect(WorkCorpus.place(context.codingPath) == place)
+        default:
+            Issue.record("refused with \(String(describing: error)) rather than naming \(place)")
+        }
+    }
+
+    @Test("a JSON work whose elisions are null is refused, naming the key")
+    func jsonWithNullElisions() {
+        let json = #"{"language": "eng", "interior_marks": "", "elisions": null}"#
+
+        let error = #expect(throws: DecodingError.self) {
+            try JSONDecoder().decode(Work.self, from: Data(json.utf8))
+        }
+        guard case let .valueNotFound(_, context) = error else {
+            Issue.record("refused with \(String(describing: error)) rather than a null value")
+            return
+        }
+        #expect(WorkCorpus.place(context.codingPath) == "elisions")
+    }
+
     @Test("what is wrong with a language is said with the value written out")
     func languageErrorNamesTheValue() {
         #expect(
@@ -80,7 +139,7 @@ struct WorkTests {
             try Piece(number: number, title: "Piece \(number)", lines: ["A line of verse,"])
         }
         return Work(
-            language: "eng",
+            writing: Writing(language: "eng", interiorMarks: "'’-", elisions: [:]),
             pieces: pieces,
             parts: [try Part(title: "The work", summary: "", first: 1, last: pieces.count)],
             free: free,

@@ -4,9 +4,21 @@ import Yams
 struct WorkFile: Decodable, Sendable {
     let slug: Text
     let language: Text
+    let interiorMarks: Text
+    let elisions: [String: [Text]]
     let title: Text
     let reading: WorkReading
     let sections: [WorkSection]
+
+    private enum CodingKeys: String, CodingKey {
+        case slug
+        case language
+        case interiorMarks = "interior_marks"
+        case elisions
+        case title
+        case reading
+        case sections
+    }
 }
 
 struct WorkReading: Decodable {
@@ -58,8 +70,9 @@ extension WorkCorpus {
 
     /// Decodes a nested work-file YAML document and validates the resulting work.
     ///
-    /// - Throws: `DecodingError` when the document is not YAML, or a field is missing or
-    ///   is not text where text belongs; ``WorkError`` when a piece or free-piece
+    /// - Throws: `DecodingError` when the document is not YAML, or a field is missing,
+    ///   is not text where text belongs, or is null or of another kind where a list or a
+    ///   mapping belongs; ``WorkError`` when a piece or free-piece
     ///   identifier is not a whole number within 32 bits; ``WorkShapeError`` when a
     ///   number is not a YAML integer within 32 bits, a fraction is not written in plain
     ///   digits, a text is null, a key is repeated, a value is written with a YAML
@@ -92,7 +105,11 @@ extension WorkCorpus {
             }
         }
         return try assemble(
-            language: work.language.value,
+            writing: Writing(
+                language: work.language.value,
+                interiorMarks: work.interiorMarks.value,
+                elisions: work.elisions.mapValues { $0.map(\.value) }
+            ),
             pieces: pieces,
             reading: HeldReading(
                 untouchedBelow: work.reading.untouchedBelow.value,

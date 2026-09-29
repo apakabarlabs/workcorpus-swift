@@ -79,6 +79,10 @@ extension WorkCorpus {
     ///
     /// - Parameters:
     ///   - language: The language the work names itself as written in.
+    ///   - interiorMarks: The characters that stay inside a word once it has begun, such
+    ///     as `"'’-"`; `""` for none.
+    ///   - elisions: Each elided spelling the work prints, mapped to the full forms it
+    ///     stands for, such as `["tatter’d": ["tattered"]]`; `[:]` for none.
     ///   - pieces: The pieces in reading order, each with the part it is filed under.
     ///   - reading: What a reading of the work is held to.
     /// - Throws: ``WorkShapeError`` when a number does not fit in 32 bits, a piece's cuts
@@ -87,24 +91,30 @@ extension WorkCorpus {
     ///   numbered from one in order.
     public static func work(
         language: String,
+        interiorMarks: String,
+        elisions: [String: [String]],
         pieces: [HeldPiece],
         reading: HeldReading
     ) throws -> Work {
-        let work = try assemble(language: language, pieces: pieces, reading: reading)
+        let work = try assemble(
+            writing: Writing(language: language, interiorMarks: interiorMarks, elisions: elisions),
+            pieces: pieces,
+            reading: reading
+        )
         try validate(work.pieces)
         try validateConfiguration(work)
         return work
     }
 
     static func assemble(
-        language: String,
+        writing: Writing,
         pieces: [HeldPiece],
         reading: HeldReading
     ) throws -> Work {
         let made = try pieces.map(makePiece)
         try validate(made)
         return Work(
-            language: language,
+            writing: writing,
             pieces: made,
             parts: try assembleParts(pieces: pieces).map(makePart),
             free: reading.free,

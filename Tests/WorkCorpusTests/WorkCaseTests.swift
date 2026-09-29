@@ -72,6 +72,8 @@ struct WorkReadingCase: Decodable, Sendable {
     let bands: [Double]?
     let threshold: Int?
     let language: String?
+    let interiorMarks: String?
+    let elisions: [String: [String]]?
     let cuts: [String: [Int]]?
     let shortTitles: [String]?
     let summaries: [String]?
@@ -80,6 +82,8 @@ struct WorkReadingCase: Decodable, Sendable {
         checkPieces(work.pieces)
         checkParts(work.parts)
         if let language { #expect(work.language == language) }
+        if let interiorMarks { #expect(work.interiorMarks == interiorMarks) }
+        if let elisions { #expect(work.elisions == elisions) }
         if let free { #expect(work.free == free) }
         if let bands {
             let scale = work.stageField
