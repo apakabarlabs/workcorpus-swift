@@ -76,12 +76,27 @@ struct WholeNumber: Decodable {
     let value: Int
 
     init(from decoder: Decoder) throws {
+        let place = WorkCorpus.place(decoder.codingPath)
+        let container = try decoder.singleValueContainer()
+        let number: Int32
         do {
-            value = Int(try decoder.singleValueContainer().decode(Int32.self))
+            number = try container.decode(Int32.self)
         } catch {
-            let place = WorkCorpus.place(decoder.codingPath)
             throw WorkCorpus.WorkShapeError.invalidNumber(place: place)
         }
+        if let written = try? container.decode(String.self), !Self.isPlainDecimal(written) {
+            throw WorkCorpus.WorkShapeError.invalidNumber(place: place)
+        }
+        value = Int(number)
+    }
+
+    static func isPlainDecimal(_ written: String) -> Bool {
+        let scalars = written.unicodeScalars[...]
+        let digits = scalars.first == "-" ? scalars.dropFirst() : scalars
+        guard let first = digits.first, digits.allSatisfy({ ("0"..."9").contains($0) }) else {
+            return false
+        }
+        return first != "0" || digits.count == 1
     }
 }
 

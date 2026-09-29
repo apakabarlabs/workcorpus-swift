@@ -184,6 +184,7 @@ struct WorkTests {
                 "pieces[0].cuts.block[0]"
             ),
             ("  - number: 1\n", "  - number: '1'\n", "pieces[0].number"),
+            ("  - number: 1\n", "  - number: 01\n", "pieces[0].number"),
             ("    last: 1\n", "    last: '1'\n", "parts[0].last"),
             ("free: [1]\n", "free: [2147483648]\n", "free[0]"),
             (
@@ -202,6 +203,33 @@ struct WorkTests {
         #expect(book != (try fixture("book-with-listening")))
         #expect(throws: WorkCorpus.WorkShapeError.invalidNumber(place: place)) {
             try WorkCorpus.decodeWorkFromBook(book)
+        }
+    }
+
+    @Test(
+        "a number not written as plain decimal digits is refused, whatever YAML makes of it",
+        arguments: ["010", "0x4", "0o4", "0b1", "1_0", "+1", "1:30"]
+    )
+    func refusesNumbersNotWrittenAsPlainDecimal(written: String) throws {
+        let fixture = try fixture("book-with-listening")
+        let threshold = fixture.replacingOccurrences(
+            of: "  score_threshold: 3\n",
+            with: "  score_threshold: \(written)\n"
+        )
+        let cut = fixture.replacingOccurrences(
+            of: "    lines: [The first line.]\n",
+            with: "    lines: [The first line.]\n    cuts:\n      block: [\(written)]\n"
+        )
+
+        #expect(threshold != fixture)
+        #expect(cut != fixture)
+        let thresholdPlace = "difficult_words.score_threshold"
+        let cutPlace = "pieces[0].cuts.block[0]"
+        #expect(throws: WorkCorpus.WorkShapeError.invalidNumber(place: thresholdPlace)) {
+            try WorkCorpus.decodeWorkFromBook(threshold)
+        }
+        #expect(throws: WorkCorpus.WorkShapeError.invalidNumber(place: cutPlace)) {
+            try WorkCorpus.decodeWorkFromBook(cut)
         }
     }
 

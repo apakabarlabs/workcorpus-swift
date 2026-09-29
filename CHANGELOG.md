@@ -36,8 +36,10 @@
   about, or a `cuts` of `null`, is still read line by line.
 - Every number a work carries — piece numbers, cut sizes, part bounds, free
   pieces, the difficult-word threshold, and piece identifiers in a work file — is
-  a YAML integer that fits in 32 bits, so that every port reads the same work.
-  A larger value, a quoted string, a float or a boolean where a number belongs is
+  a YAML integer that fits in 32 bits, written as plain decimal digits with an
+  optional `-` and no leading zero, so that every port reads the same work.
+  A larger value, a quoted string, a float, a boolean, or a number written with
+  `+`, a leading zero, underscores, `0x`/`0o`/`0b` or as sexagesimal `1:30` is
   refused with `WorkShapeError.invalidNumber`, naming the field, such as
   `pieces[0].cuts.block[1]`; a piece identifier past 32 bits is
   `WorkError.pieceIsNotNumbered`. `PieceAsset.number(inName:)` reads no number
