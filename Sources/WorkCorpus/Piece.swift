@@ -72,42 +72,6 @@ public struct Piece: Decodable, Identifiable, Sendable, Equatable {
     }
 }
 
-struct WholeNumber: Decodable {
-    let value: Int
-
-    init(from decoder: Decoder) throws {
-        let place = WorkCorpus.place(decoder.codingPath)
-        let container = try decoder.singleValueContainer()
-        let number: Int32
-        let negative: Bool
-        do {
-            number = try container.decode(Int32.self)
-            negative = try container.decode(Double.self).sign == .minus
-        } catch {
-            throw WorkCorpus.WorkShapeError.invalidNumber(place: place)
-        }
-        let written: String?
-        do {
-            written = try container.decode(String.self)
-        } catch DecodingError.typeMismatch {
-            written = nil
-        }
-        guard written.map(Self.isPlainDecimal) ?? true, number != 0 || !negative else {
-            throw WorkCorpus.WorkShapeError.invalidNumber(place: place)
-        }
-        value = Int(number)
-    }
-
-    static func isPlainDecimal(_ written: String) -> Bool {
-        let scalars = written.unicodeScalars[...]
-        let digits = scalars.first == "-" ? scalars.dropFirst() : scalars
-        guard let first = digits.first, digits.allSatisfy({ ("0"..."9").contains($0) }) else {
-            return false
-        }
-        return first != "0" || written == "0"
-    }
-}
-
 /// Decodes, assembles, and validates portable reading works.
 public enum WorkCorpus {
     /// Piece numbering does not form the required sequence beginning at one.

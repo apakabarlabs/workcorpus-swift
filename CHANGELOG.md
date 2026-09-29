@@ -50,6 +50,8 @@
   a JSON number that is a whole number within 32 bits reads, so `5.0` reads as
   5, while a string such as `"5"`, a boolean, null, a fraction, a value past 32
   bits or `-0` is refused with `WorkShapeError.invalidNumber`, naming the field.
+  The value is read exactly as written rather than through a binary float, so
+  `5.000000000000000001` and `4.9999999999999999999` are fractions and refused.
 - `Part.init` throws `WorkShapeError.partOutOfRange` for a part that starts before
   piece one, ends before it starts, or does not fit in 32 bits, and a work whose
   part runs past its last piece is refused with the same error rather than
