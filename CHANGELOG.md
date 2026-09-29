@@ -1,21 +1,49 @@
 # Changelog
 
+WorkCorpus reads the text a read-aloud practice app is built on, such as a book
+of poems, from a YAML or JSON file: what is read, how it is divided for practice,
+and the app's settings for it.
+
+Terms used below. A *work* is the whole text, such as Shakespeare's sonnets. A
+*piece* is what a reader practises in one sitting: a sonnet, a stanza, a scene. A
+*part* is a run of consecutive pieces, such as a chapter or an act. A *stage* is
+how much of a piece is attempted at once: `line`, one line, or `block`, a group of
+lines. A piece's *cuts* say how many lines each `block` group has. A work comes as
+a *work file*, sections holding pieces as an author writes them, as an assembled
+*book*, the flat form with `pieces`, `parts`, `stage_field` and `difficult_words`,
+or is built in code with `WorkCorpus.work` from values the app already holds.
+
 ## 0.5.0
 
 ### Added
 
-- `Work.language`: the language the work names itself as written in. It is read
-  from the `language` key of a work file or an assembled book, and has to be a
-  language tag: two or three lowercase letters, then any number of `-` and two to
-  eight ASCII letters or digits, such as `en`, `eng` or `en-GB`. Anything else is
-  refused with `WorkShapeError.invalidLanguage`, which names the value.
-- `WorkCorpus.WorkShapeError` is public, so a caller can tell which part of a work
-  is malformed. `decodeWork`, `decodeWorkFromBook`, `work` and `Piece`'s
-  initialisers document what they throw.
+- `Work.language`, the language the work is written in, read from its `language`
+  key. It must be a language tag: two or three lowercase letters, optionally
+  followed by `-` and subtags of two to eight ASCII letters or digits, such as
+  `en`, `eng` or `en-GB`. Two- and three-letter codes are equally accepted and
+  kept as written. Any other value is refused with
+  `WorkShapeError.invalidLanguage`, which names the value.
+- `WorkCorpus.WorkShapeError` is public, so a caller can tell what in a work is
+  malformed. It and the already public `WorkCorpus.CorpusError` and
+  `WorkCorpus.WorkError` are named below without the `WorkCorpus.` prefix.
+  `decodeWork`, `decodeWorkFromBook`, `work` and `Piece`'s initialisers document
+  what they throw.
 
 ### Changed
 
-- `WorkCorpus.work` takes the work's language first, since a held work has no
+- A work file and a book need a `language` key; one without it no longer
+  decodes:
+
+  ```yaml
+  # 0.4
+  slug: sonnets
+  title: Sonnets
+  # 0.5
+  slug: sonnets
+  language: eng
+  title: Sonnets
+  ```
+- `WorkCorpus.work` takes the language first, since values held in code have no
   file to read it from:
 
   ```swift
@@ -24,116 +52,15 @@
   // 0.5
   try WorkCorpus.work(language: "eng", pieces: pieces, reading: reading)
   ```
-- An assembled book needs a `language` key; one without it no longer decodes.
-- A piece's `cuts` table is validated when the piece is made, so no `Piece`
-  exists with cuts that do not divide its lines. The sizes a stage is cut into
-  have to add up to exactly the lines of the piece. A cut of zero or fewer lines,
-  sizes that add up to more or fewer lines than the piece has, cuts for a stage
-  that does not exist, and cuts for the `line` stage are refused, naming the
-  piece and the stage. Until now sizes past the end of the piece were cut short,
-  a shortfall was made up with one more cut of the remaining lines, and cuts for
-  an unknown or the `line` stage were ignored. A stage the work says nothing
-  about, or a `cuts` of `null`, is still read line by line.
-- Every number a work carries — piece numbers, cut sizes, part bounds, free
-  pieces and the difficult-word threshold — is a YAML integer that fits in 32
-  bits, written as plain decimal digits with an optional `-` and no leading zero,
-  so that every port reads the same work. A larger value, a quoted string, a
-  float, a boolean, null, a list or a mapping in place of the number, or a number
-  written with `+`, a leading zero, as `-0`, with underscores, `0x`/`0o`/`0b` or
-  as sexagesimal `1:30` is refused with `WorkShapeError.invalidNumber`, naming
-  the field, such as `pieces[0].cuts.block[1]`. The piece and free-piece
-  identifiers of a work file are held to the same writing and the same 32 bits,
-  and one that is not, such as `'+3'`, `'03'` or `'-0'`, is refused with
-  `WorkError.pieceIsNotNumbered`. `PieceAsset.number(inName:)` reads no number
-  past 32 bits.
-- A work decoded from JSON through `Decodable` holds its numbers to their value:
-  a JSON number that is a whole number within 32 bits reads, so `5.0` reads as
-  5, while a string such as `"5"`, a boolean, null, a fraction, a value past 32
-  bits or `-0` is refused with `WorkShapeError.invalidNumber`, naming the field.
-  The value is read as a `Decimal` rather than through a binary float, so
-  `5.000000000000000001` and `4.9999999999999999999` are fractions and refused. A
-  JSON number that `Decimal` holds with 38 or more significant digits is refused,
-  a whole number with `invalidNumber` and a bound with `invalidFraction`, since
-  not every port can hold it exactly; digits past the ones `Decimal` keeps are
-  dropped by Foundation before the library sees the number.
-- A text a work needs — its language, a piece's title, identifier and lines, a
-  part's title and summary, a work file's slug and title — is refused with
-  `WorkShapeError.nullText`, naming the field, when it is null as the YAML 1.2
-  core schema reads null: written as `null`, `Null`, `NULL` or `~`, or left empty
-  after its key or dash. Until now YAML null read as the text it was written as,
-  or nothing. Empty text is written as `""`, as a blank line of a poem is. A null
-  `short`, `summary` of a work-file section or `cuts` still reads as none.
-- The stage field bounds, `stage_field.*` in a book and `reading.*_below` in a
-  work file, follow the one writing numbers follow: in YAML plain decimal digits
-  with an optional `-` and fractional part, such as `0.001` or `1`; in JSON a
-  JSON number. A quoted value, a boolean, null, or in YAML `0.5_0`, `.5`, `5e-1`
-  or sexagesimal `1:00` is refused with the new `WorkShapeError.invalidFraction`,
-  naming the field, and so is a JSON bound a `Double` cannot hold, such as
-  `1e-400` or `1e400`.
-- A YAML mapping that names a key twice is refused with the new
-  `WorkShapeError.repeatedKey`, naming the key, rather than with the parser's
-  `DecodingError`. Of several repeated keys, the one repeated first in the
-  document is named; of several repeated on one line, as a flow mapping can, the
-  first in code-point order, where the Kotlin port names the first written. When
-  a work has several of the YAML problems — an anchor, alias or merge key, an
-  explicit tag, a repeated key — the one that comes first in the document is
-  reported, and an alias with no anchor, such as `*nowhere`, is refused as
-  `yamlReference` naming its field, or the enclosing mapping when it stands as a
-  key. A problem before a syntax error is reported rather than the syntax error;
-  only a document with none before it is refused with `DecodingError`. A key that
-  is a list or a mapping is refused with `DecodingError`, saying the mapping has
-  a key that is not text. Lines are counted as the YAML parser counts them, broken
-  by `\n`, `\r\n`, `\r`, NEL, LS or PS. Yams gives up at its first mapping with a
-  repeat and offers no events, so the first problem is found by bisecting runs of
-  leading lines; after eight runs in a row that cannot be read on their own, as
-  inside a long flow list, the problem found so far is reported, at worst the one
-  Yams reported. Two differences from the Kotlin port no case pins: within one
-  flow collection a later problem may be named before an earlier tag or anchor,
-  and keys equal only under Unicode canonical equivalence count as one key here
-  and as two there. A key the work does not know is skipped, in YAML and
-  JSON alike. A key repeated in one JSON object is not refused: `JSONDecoder`
-  keeps one of its values before a `Decodable` type sees the object, and which
-  one may differ between the ports.
-- `Part.init` throws `WorkShapeError.partOutOfRange` for a part that starts before
-  piece one, ends before it starts, or does not fit in 32 bits, and a work whose
-  part runs past its last piece is refused with the same error rather than
-  counting past it:
-
-  ```swift
-  // 0.4
-  let part = Part(title: "Sonnets", summary: "", first: 1, last: 154)
-  // 0.5
-  let part = try Part(title: "Sonnets", summary: "", first: 1, last: 154)
-  ```
-- A work file or held pieces whose numbering does not run from one in order are
-  refused with `CorpusError.outOfOrder` before their parts are assembled, so a
-  piece numbered `0` is named as out of order rather than as a part out of range.
-- A work file or book that gives a value a YAML anchor, takes one from an alias,
-  or merges a mapping in with a `<<` key is refused with the new
-  `WorkShapeError.yamlReference`, naming the anchored value or the merging
-  mapping, such as `parts[0]`. They were resolved until now, but YAML readers do
-  not resolve them alike, so the same file could read differently on another
-  port. A `<<` key is refused in quotes too, since some readers merge it all
-  the same, and whatever it holds. These YAML rules, and the naming of a repeated
-  key, hold through `decodeWork` and `decodeWorkFromBook`, which parse the YAML
-  themselves, and are not applied when `Work` is decoded directly. Decoded from
-  JSON with `JSONDecoder`, as the shared cases test, its numbers, fractions and
-  texts are held to the same rules, and a JSON syntax error reaches the caller as
-  `JSONDecoder`'s own `DecodingError`.
-- A value written with an explicit YAML tag — `!!str 3`, `!!int 3`, `!poem`, the
-  non-specific `!`, or a tag on a list or mapping — is refused with the new
-  `WorkShapeError.explicitTag`, naming the field, so that `score_threshold:
-  !!str 3` no longer reads as 3. Yams cannot tell `!!str` on a quoted value, or
-  `!!str` or `!` on a key, from no tag at all, since it gives a quoted value the
-  str tag itself and settles every key's tag before the library sees the key; so
-  those alone are read as if untagged, while the Kotlin port refuses them: a rare
-  difference no case pins.
-- `PieceAsset` compares a stem and a file name in Unicode normalization form C,
-  and reads only the ASCII digits `0` to `9` as the digits of a piece number or
-  of a numeric voice suffix. A name such as `s-12三` now reads as piece 12, and
-  `s-001-三` names the voice `三`.
-- `Piece.init(number:title:lines:cutSizes:)` throws, since it is where the cuts
-  are refused. Calls need `try`:
+- A piece's cuts are checked when the piece is made or decoded: the `block`
+  sizes must each be at least one and add up to exactly the piece's number of
+  lines, and cuts for `line` or for a stage the library does not know are
+  refused. The errors, `cutsDoNotCoverThePiece`, `emptyCut`, `cutsForLineStage`
+  and `cutsForUnknownStage`, name the piece and the stage. Until now sizes past
+  the end of the piece were cut short, a shortfall got one more group of the
+  remaining lines, and cuts for `line` or an unknown stage were ignored. A piece
+  without `cuts`, or with `cuts: null`, is still read line by line. So
+  `Piece.init(number:title:lines:cutSizes:)` throws:
 
   ```swift
   // 0.4
@@ -141,13 +68,100 @@
   // 0.5
   let piece = try Piece(number: 1, title: "Sonnet 1", lines: lines)
   ```
+- `Part.init` throws `WorkShapeError.partOutOfRange` for a part that starts
+  before piece one, ends before it starts, or does not fit in 32 bits, and a work
+  whose last part runs past its last piece is refused with the same error:
+
+  ```swift
+  // 0.4
+  let part = Part(title: "Sonnets", summary: "", first: 1, last: 154)
+  // 0.5
+  let part = try Part(title: "Sonnets", summary: "", first: 1, last: 154)
+  ```
+- Pieces, in a work file or passed to `WorkCorpus.work`, that are not numbered
+  from one in order are refused with `CorpusError.outOfOrder` before their parts
+  are checked, so a piece numbered `0` is reported as out of order rather than
+  as a part out of range.
+- Every whole number in a work — piece numbers, cut sizes, a part's `first` and
+  `last`, the `free` pieces (those readable without purchase) and the score at
+  which a word counts as difficult — must be a YAML integer that fits in 32 bits,
+  written as plain decimal digits with an optional `-` and no leading zero. A
+  larger value, a quoted string, a float, a boolean, null, a list or a mapping,
+  or a number written with `+`, a leading zero, as `-0`, with underscores,
+  `0x`/`0o`/`0b` or as sexagesimal `1:30` is refused with
+  `WorkShapeError.invalidNumber`, naming the field, such as
+  `pieces[0].cuts.block[1]`. A work file writes piece ids and `free` entries as
+  strings, such as `'3'`; one that is not written that way within 32 bits, such
+  as `'+3'`, `'03'` or `'-0'`, is refused with `WorkError.pieceIsNotNumbered`.
+  `PieceAsset.number(inName:)` returns `nil` for a file name whose number does
+  not fit in 32 bits.
+- The progress bounds — `stage_field.untouched_below`, `begun_below` and
+  `most_below` in a book, `reading.*_below` in a work file, which split a
+  stage's completion into the bands untouched, begun, most and whole — must be
+  written in YAML as plain decimal digits with an optional `-` and fractional
+  part, such as `0.001` or `1`. A quoted value, a boolean, null, `0.5_0`, `.5`,
+  `5e-1` or sexagesimal `1:00` is refused with `WorkShapeError.invalidFraction`,
+  naming the field.
+- A text a work needs — its language, a piece's title, id and lines, a part's
+  title and summary, a work file's `slug` and `title` — is refused with
+  `WorkShapeError.nullText`, naming the field, when it is YAML null: `null`,
+  `Null`, `NULL`, `~`, or nothing after its key or dash. Until now it read as the
+  text it was written as, or as nothing. Write empty text as `""`, as for a blank
+  line of a poem. A null `short` (a part's short title), a null `summary` of a
+  work-file section and a null `cuts` still read as none.
+- `decodeWork` and `decodeWorkFromBook` refuse YAML that could read differently
+  in another YAML reader:
+  - an anchor, an alias or a `<<` merge key, quoted or not, with
+    `WorkShapeError.yamlReference`, naming the anchored value or the merging
+    mapping, such as `parts[0]`; an alias with no anchor, such as `*nowhere`,
+    names its field, or the enclosing mapping when the alias is a key. These were
+    resolved until now;
+  - an explicit tag — `!!str 3`, `!!int 3`, `!poem`, `!`, or a tag on a list or
+    mapping — with `WorkShapeError.explicitTag`, naming the field, so
+    `score_threshold: !!str 3` no longer reads as 3. The YAML parser does not
+    report `!!str` on a quoted value, or `!!str` or `!` on a key, so those are
+    read as if untagged;
+  - a key repeated in one mapping with `WorkShapeError.repeatedKey`, naming the
+    key, rather than with `DecodingError`. Keys that differ only in how their
+    accented letters are composed in Unicode count as the same key.
+
+  Of several such problems the first in the document is reported, even when a
+  syntax error follows it; of several keys repeated on one line, in a flow
+  mapping `{…}`, the one whose name sorts first by Unicode code point is named.
+  Inside a flow collection (`[…]` or `{…}`) a later problem may occasionally be
+  named before an earlier one. A document whose first fault is a syntax error, and
+  a key that is a list or a mapping, are refused with `DecodingError`. A key the
+  work does not know is skipped, in YAML and JSON alike.
+- Decoded from JSON with `JSONDecoder`, `Work` holds its numbers, progress bounds
+  and texts to the rules above; the YAML-only rules and the checks between fields,
+  such as parts covering the pieces, apply only through `decodeWork` and
+  `decodeWorkFromBook`. A JSON number is judged by its value: a whole number
+  within 32 bits reads, so `5.0` reads as 5 and `1e2` as 100, while a string such
+  as `"5"`, a boolean, null, a fraction, a value past 32 bits or `-0` is refused
+  with `WorkShapeError.invalidNumber`, naming the field. The value is read as a
+  `Decimal`, not a binary float, so `5.000000000000000001` and
+  `4.9999999999999999999` are fractions and refused. A number of 38 or more
+  significant digits, trailing zeros aside, is refused: a whole number with
+  `invalidNumber`, a progress bound with `invalidFraction`. `Decimal` keeps only
+  about 38 digits and Foundation drops the rest before the library sees the
+  number, so a longer one is judged by what is kept:
+  `5.00000000000000000000000000000000000001` reads as 5. A progress bound a
+  `Double` cannot hold, such as `1e-400` or `1e400`, is refused with
+  `invalidFraction`. A JSON syntax error is `JSONDecoder`'s own `DecodingError`.
+  A key repeated in one JSON object is not refused; `JSONDecoder` keeps one of its
+  values.
+- `PieceAsset` compares its stem with a file name in Unicode normalization form C,
+  and reads only the ASCII digits `0` to `9` as digits, both in a piece number
+  and when telling a narration voice suffix, such as `onyx` in
+  `s-001-onyx.json`, from a number. `s-12三` now reads as piece 12, and
+  `s-001-三` names the voice `三`.
 
 ### Fixed
 
 - `PieceAsset.name` writes the stem as it is. It was used as a format string, so
   a stem containing `%` produced a wrong name.
-- `PieceAsset.name` and `sharedReading` pad numbers themselves rather than through
-  `%d`, which reads only 32 bits of an `Int`.
+- `PieceAsset.name` and `sharedReading` write a number that does not fit in 32
+  bits in full; it was written wrongly.
 - A work without pieces is refused with `WorkShapeError.invalidFreePieces`,
   since no piece of it can be free. Until now its free list could name piece 1.
 
