@@ -34,7 +34,10 @@ import Yams
 ///
 /// A work is written out in full. A YAML anchor, an alias or a `<<` merge key, quoted
 /// or not, is refused with ``WorkCorpus/WorkShapeError/yamlReference(place:)``, since
-/// YAML readers do not resolve them alike.
+/// YAML readers do not resolve them alike. An explicit YAML tag, such as `!!str 3`, is
+/// refused with ``WorkCorpus/WorkShapeError/explicitTag(place:)``, so that no value reads
+/// as another kind than it is written; Yams cannot tell `!!str` on a quoted value or on
+/// a key from no tag at all, so those two alone are read as if untagged.
 public struct Work: Decodable, Sendable {
     /// Language the work is written in, as the work names it: a language tag such as
     /// `en`, `eng` or `en-GB`.
@@ -161,6 +164,10 @@ extension WorkCorpus {
         /// A YAML mapping names the same key more than once. Of several repeated keys,
         /// the one repeated first in the document is named.
         case repeatedKey(String)
+        /// A value is written with an explicit YAML tag, such as `!!str 3` or `!poem`. A
+        /// work never needs one, and a tag would let a value read as another kind than it
+        /// is written.
+        case explicitTag(place: String)
 
         /// Reader-facing description naming what is wrong and where.
         public var errorDescription: String? {
@@ -213,6 +220,10 @@ extension WorkCorpus {
 
             case let .repeatedKey(key):
                 "The work names \(key) more than once in one mapping."
+
+            case let .explicitTag(place):
+                "The work's \(place) is written with an explicit YAML tag; "
+                    + "a work leaves the kind of each value to its field."
             }
         }
 

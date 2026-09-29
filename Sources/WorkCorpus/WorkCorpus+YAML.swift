@@ -46,17 +46,21 @@ extension WorkCorpus {
     }
 
     private static func refuseReferences(in node: Node, at place: String) throws {
-        guard node.anchor == nil else {
-            throw WorkShapeError.yamlReference(place: place.isEmpty ? "top level" : place)
-        }
+        let shown = place.isEmpty ? "top level" : place
+        guard node.anchor == nil else { throw WorkShapeError.yamlReference(place: shown) }
+        guard !isTagged(node) else { throw WorkShapeError.explicitTag(place: shown) }
         switch node {
         case .mapping(let mapping):
             for (key, value) in mapping {
                 guard key.anchor == nil, key.string != "<<" else {
-                    throw WorkShapeError.yamlReference(place: place.isEmpty ? "top level" : place)
+                    throw WorkShapeError.yamlReference(place: shown)
                 }
                 let name = key.string ?? ""
-                try refuseReferences(in: value, at: place.isEmpty ? name : "\(place).\(name)")
+                let entry = place.isEmpty ? name : "\(place).\(name)"
+                guard key.scalar?.tag.rawValue == Tag.Name.str.rawValue else {
+                    throw WorkShapeError.explicitTag(place: entry)
+                }
+                try refuseReferences(in: value, at: entry)
             }
         case .sequence(let sequence):
             for (index, item) in sequence.enumerated() {
@@ -64,6 +68,20 @@ extension WorkCorpus {
             }
         default:
             break
+        }
+    }
+
+    private static func isTagged(_ node: Node) -> Bool {
+        switch node {
+        case .scalar(let scalar):
+            let tag = scalar.tag.rawValue
+            return !tag.isEmpty && (scalar.style == .plain || tag != Tag.Name.str.rawValue)
+        case .mapping(let mapping):
+            return !mapping.tag.rawValue.isEmpty
+        case .sequence(let sequence):
+            return !sequence.tag.rawValue.isEmpty
+        default:
+            return false
         }
     }
 }
