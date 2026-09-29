@@ -162,7 +162,8 @@ extension WorkCorpus {
         /// with an optional fractional part, such as `0.5_0`, `.5`, `5e-1` or `1:00`.
         case invalidFraction(place: String)
         /// A YAML mapping names the same key more than once. Of several repeated keys,
-        /// the one repeated first in the document is named.
+        /// the one repeated first in the document is named; of several repeated on one
+        /// line, as a flow mapping can, the first in code-point order.
         case repeatedKey(String)
         /// A value is written with an explicit YAML tag, such as `!!str 3` or `!poem`. A
         /// work never needs one, and a tag would let a value read as another kind than it
