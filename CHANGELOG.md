@@ -72,7 +72,7 @@
   `Double` cannot hold, such as `1e-400` or `1e400`.
 - A YAML mapping that names a key twice is refused with the new
   `WorkShapeError.repeatedKey`, naming the key, rather than with the parser's
-  `DecodingError`. A key the work does not know is skipped, in YAML and JSON
+  `DecodingError`; of several, the key repeated first in the document is named. A key the work does not know is skipped, in YAML and JSON
   alike. A key repeated in one JSON object is not refused: `JSONDecoder` keeps
   one of the values before a `Decodable` type sees the object.
 - `Part.init` throws `WorkShapeError.partOutOfRange` for a part that starts before
