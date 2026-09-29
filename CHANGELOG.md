@@ -31,7 +31,8 @@ or is built in code with `WorkCorpus.work` from values the app already holds.
   are kept exactly as written: WorkCorpus only carries them. What a mark does at
   the start or end of a word, and whether case and punctuation count when a full
   form is compared with what was heard, is decided by the code that uses them,
-  such as ReadAloudKit's `WordTokenizer` and `Elisions`.
+  such as `WordTokenizer` and `Elisions` in
+  [ReadAloudKit](https://github.com/apakabarlabs/readaloudkit-swift).
 
 ### Changed
 
