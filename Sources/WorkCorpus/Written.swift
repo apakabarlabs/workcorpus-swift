@@ -13,7 +13,7 @@ struct WholeNumber: Decodable {
                 number = Self.isPlainDecimal(written) ? Int32(written) : nil
             } else {
                 let sign = try container.decode(Double.self).sign
-                let whole = Self.whole(try container.decode(Decimal.self))
+                let whole = try exactJSONNumber(in: container).flatMap(Self.whole)
                 number = whole == 0 && sign == .minus ? nil : whole
             }
         } catch {
@@ -51,13 +51,20 @@ struct Fraction: Decodable {
         let place = WorkCorpus.place(decoder.codingPath)
         let container = try decoder.singleValueContainer()
         let written: String?
+        let representable: Bool
         do {
             value = try container.decode(Double.self)
             written = try writtenText(in: container)
+            if let written {
+                representable = Self.isPlainFraction(written)
+            } else {
+                let exact = try exactJSONNumber(in: container)
+                representable = exact.map { ($0 == 0) == (value == 0) } ?? false
+            }
         } catch {
             throw WorkCorpus.WorkShapeError.invalidFraction(place: place)
         }
-        guard value.isFinite, written.map(Self.isPlainFraction) ?? true else {
+        guard value.isFinite, representable else {
             throw WorkCorpus.WorkShapeError.invalidFraction(place: place)
         }
     }
@@ -80,6 +87,14 @@ struct Text: Decodable {
         }
         value = try container.decode(String.self)
     }
+}
+
+private func exactJSONNumber(in container: SingleValueDecodingContainer) throws -> Decimal? {
+    let exact = try container.decode(Decimal.self)
+    let digits = exact.significand.magnitude.description.unicodeScalars.filter {
+        ("0"..."9").contains($0)
+    }
+    return digits.count < 38 ? exact : nil
 }
 
 private func writtenText(in container: SingleValueDecodingContainer) throws -> String? {

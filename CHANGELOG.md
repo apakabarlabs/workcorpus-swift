@@ -50,8 +50,12 @@
   a JSON number that is a whole number within 32 bits reads, so `5.0` reads as
   5, while a string such as `"5"`, a boolean, null, a fraction, a value past 32
   bits or `-0` is refused with `WorkShapeError.invalidNumber`, naming the field.
-  The value is read exactly as written rather than through a binary float, so
-  `5.000000000000000001` and `4.9999999999999999999` are fractions and refused.
+  The value is read as a `Decimal` rather than through a binary float, so
+  `5.000000000000000001` and `4.9999999999999999999` are fractions and refused. A
+  JSON number that `Decimal` holds with 38 or more significant digits is refused,
+  a whole number with `invalidNumber` and a bound with `invalidFraction`, since
+  not every port can hold it exactly; digits past the ones `Decimal` keeps are
+  dropped by Foundation before the library sees the number.
 - A text a work needs — its language, a piece's title, identifier and lines, a
   part's title and summary, a work file's slug and title — is refused with
   `WorkShapeError.nullText`, naming the field, when it is null: written as `~` or
@@ -64,7 +68,8 @@
   with an optional `-` and fractional part, such as `0.001` or `1`; in JSON a
   JSON number. A quoted value, a boolean, null, or in YAML `0.5_0`, `.5`, `5e-1`
   or sexagesimal `1:00` is refused with the new
-  `WorkShapeError.invalidFraction`, naming the field.
+  `WorkShapeError.invalidFraction`, naming the field, and so is a JSON bound a
+  `Double` cannot hold, such as `1e-400` or `1e400`.
 - A YAML mapping that names a key twice is refused with the new
   `WorkShapeError.repeatedKey`, naming the key, rather than with the parser's
   `DecodingError`. A key the work does not know is skipped, in YAML and JSON

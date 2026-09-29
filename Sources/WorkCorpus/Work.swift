@@ -16,11 +16,17 @@ import Yams
 /// Decoded from JSON, a number is a JSON number whose value is a whole number that fits
 /// in 32 bits, so `5` and `5.0` both read as 5. A string such as `"5"`, a boolean,
 /// null, a fraction, a value past 32 bits and `-0` are refused as in YAML. The value
-/// is taken exactly as written, so `5.000000000000000001` is a fraction.
+/// is read as a `Decimal` rather than through a binary float, so
+/// `5.000000000000000001` is a fraction. A number that `Decimal` holds with 38 or more
+/// significant digits is refused, since not every port can hold it exactly. Digits
+/// past the ones `Decimal` keeps are dropped by Foundation before the number is seen,
+/// so a literal longer than that reads as the value `Decimal` keeps of it.
 ///
 /// The stage field bounds are fractions held to the same one writing: in YAML, plain
 /// decimal digits with an optional `-` and fractional part, such as `0.001` or `1`,
-/// and never quoted, with `_`, an exponent or as sexagesimal; in JSON, a JSON number.
+/// and never quoted, with `_`, an exponent or as sexagesimal; in JSON, a JSON number
+/// of fewer than 38 significant digits that a `Double` holds without rounding it to
+/// zero or infinity.
 ///
 /// A work is written out in full. A YAML anchor, an alias or a `<<` merge key, quoted
 /// or not, is refused with ``WorkCorpus/WorkShapeError/yamlReference(place:)``, since
