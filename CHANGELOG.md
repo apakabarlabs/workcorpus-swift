@@ -57,6 +57,9 @@
   // 0.5
   let part = try Part(title: "Sonnets", summary: "", first: 1, last: 154)
   ```
+- A work file or held pieces whose numbering does not run from one in order are
+  refused with `CorpusError.outOfOrder` before their parts are assembled, so a
+  piece numbered `0` is named as out of order rather than as a part out of range.
 - `PieceAsset` compares a stem and a file name in Unicode normalization form C,
   and reads only the ASCII digits `0` to `9` as the digits of a piece number or
   of a numeric voice suffix. A name such as `s-12三` now reads as piece 12, and

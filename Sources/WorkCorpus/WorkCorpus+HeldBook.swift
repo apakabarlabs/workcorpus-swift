@@ -102,6 +102,7 @@ extension WorkCorpus {
         reading: HeldReading
     ) throws -> Work {
         let made = try pieces.map(makePiece)
+        try validate(made)
         return Work(
             language: language,
             pieces: made,
