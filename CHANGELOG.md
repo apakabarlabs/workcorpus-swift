@@ -57,8 +57,8 @@ or is built in code with `WorkCorpus.work` from values the app already holds.
   lines, and cuts for `line` or for a stage the library does not know are
   refused. The errors, `WorkShapeError.cutsDoNotCoverThePiece`,
   `WorkShapeError.emptyCut`, `WorkShapeError.cutsForLineStage` and
-  `WorkShapeError.cutsForUnknownStage`, name the piece and the stage. Until now sizes past
-  the end of the piece were cut short, a shortfall got one more group of the
+  `WorkShapeError.cutsForUnknownStage`, name the piece and the stage. Until now
+  sizes past the end of the piece were cut short, a shortfall got one more group of the
   remaining lines, and cuts for `line` or an unknown stage were ignored. A piece
   without `cuts`, or with `cuts: null`, is still read line by line. So
   `Piece.init(number:title:lines:cutSizes:)` throws:
