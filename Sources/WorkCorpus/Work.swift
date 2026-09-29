@@ -113,8 +113,8 @@ extension WorkCorpus {
         case invalidStageFieldScale
         case invalidDifficultWordThreshold
         /// A field that holds a number holds something else: a quoted string, a float,
-        /// a boolean, an integer that does not fit in 32 bits, or one not written as plain
-        /// decimal digits.
+        /// a boolean, null, a list or a mapping, an integer that does not fit in 32 bits,
+        /// or one not written as plain decimal digits.
         case invalidNumber(place: String)
         case invalidLanguage(String)
         case cutsForUnknownStage(piece: Int, stage: String)

@@ -38,7 +38,8 @@
   pieces, the difficult-word threshold, and piece identifiers in a work file — is
   a YAML integer that fits in 32 bits, written as plain decimal digits with an
   optional `-` and no leading zero, so that every port reads the same work.
-  A larger value, a quoted string, a float, a boolean, or a number written with
+  A larger value, a quoted string, a float, a boolean, null, a list or a mapping
+  in place of the number, or a number written with
   `+`, a leading zero, as `-0`, with underscores, `0x`/`0o`/`0b` or as
   sexagesimal `1:30` is
   refused with `WorkShapeError.invalidNumber`, naming the field, such as
