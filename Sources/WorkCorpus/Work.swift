@@ -6,6 +6,9 @@ import Yams
 /// Decode through ``WorkCorpus/decodeWork(_:)`` or
 /// ``WorkCorpus/decodeWorkFromBook(_:)`` to validate the complete work before use.
 /// Decoding this type directly does not validate relationships between its fields.
+///
+/// Every number a work carries, from piece numbers to cut sizes, is a YAML integer that
+/// fits in 32 bits.
 public struct Work: Decodable, Sendable {
     /// Language the work is written in, as the work names it: a language tag such as
     /// `en`, `eng` or `en-GB`.
@@ -32,6 +35,40 @@ public struct Work: Decodable, Sendable {
         case stageField = "stage_field"
         case difficultWords = "difficult_words"
     }
+
+    init(
+        language: String,
+        pieces: [Piece],
+        parts: [Part],
+        free: [Int],
+        stageField: StageFieldScale,
+        difficultWords: DifficultWordsConfiguration
+    ) {
+        self.language = language
+        self.pieces = pieces
+        self.parts = parts
+        self.free = free
+        self.stageField = stageField
+        self.difficultWords = difficultWords
+    }
+
+    /// Decodes a work without validating the relationships between its fields.
+    ///
+    /// - Throws: `DecodingError` when a field is missing or is not text where text
+    ///   belongs; ``WorkCorpus/WorkShapeError`` naming the field when a number is not a
+    ///   YAML integer within 32 bits, or when a piece or part is out of shape.
+    public init(from decoder: Decoder) throws {
+        let values = try decoder.container(keyedBy: CodingKeys.self)
+        language = try values.decode(String.self, forKey: .language)
+        pieces = try values.decode([Piece].self, forKey: .pieces)
+        parts = try values.decode([Part].self, forKey: .parts)
+        free = try values.decode([WholeNumber].self, forKey: .free).map(\.value)
+        stageField = try values.decode(StageFieldScale.self, forKey: .stageField)
+        difficultWords = try values.decode(
+            DifficultWordsConfiguration.self,
+            forKey: .difficultWords
+        )
+    }
 }
 
 /// Configuration for classifying repeatedly missed words.
@@ -47,6 +84,16 @@ public struct DifficultWordsConfiguration: Decodable, Sendable {
     public init(scoreThreshold: Int) {
         self.scoreThreshold = scoreThreshold
     }
+
+    /// Decodes a threshold.
+    ///
+    /// - Throws: `DecodingError` when the threshold is missing;
+    ///   ``WorkCorpus/WorkShapeError`` naming the field when it is not a YAML integer
+    ///   within 32 bits.
+    public init(from decoder: Decoder) throws {
+        let values = try decoder.container(keyedBy: CodingKeys.self)
+        scoreThreshold = try values.decode(WholeNumber.self, forKey: .scoreThreshold).value
+    }
 }
 
 extension WorkCorpus {
@@ -54,21 +101,23 @@ extension WorkCorpus {
     public enum WorkShapeError: LocalizedError, Equatable {
         /// The parts leave a gap, overlap, or stop short of the last piece.
         case partsDoNotCoverTheWork
+        /// A part does not start at piece one or later, ends before it starts, or runs
+        /// past the last piece of the work.
+        case partOutOfRange(first: Int, last: Int)
         /// The free pieces are empty, repeated, or outside the work.
         case invalidFreePieces
         /// The stage field bounds are not increasing values between zero and one.
         case invalidStageFieldScale
-        /// The difficult-word score threshold is not positive.
         case invalidDifficultWordThreshold
-        /// The language the work names is not a language tag.
+        /// A field that holds a number holds something else: a quoted string, a float,
+        /// a boolean, or an integer that does not fit in 32 bits.
+        case invalidNumber(place: String)
         case invalidLanguage(String)
-        /// A piece is cut for a stage that does not exist.
         case cutsForUnknownStage(piece: Int, stage: String)
         /// A piece is cut for the line stage, which is never cut.
         case cutsForLineStage(piece: Int)
         /// A piece has a cut of zero or fewer lines at a stage.
         case emptyCut(piece: Int, stage: String, size: Int)
-        /// The cuts of a stage add up to more or fewer lines than the piece has.
         case cutsDoNotCoverThePiece(piece: Int, stage: String, cut: Int, lines: Int)
 
         /// Reader-facing description naming what is wrong and where.
@@ -76,6 +125,10 @@ extension WorkCorpus {
             switch self {
             case .partsDoNotCoverTheWork:
                 "The parts do not cover the work exactly once."
+
+            case let .partOutOfRange(first, last):
+                "A part runs from piece \(first) to piece \(last), "
+                    + "which is not a range of pieces in the work."
 
             case .invalidFreePieces:
                 "The list of pieces free to read is empty, repeated, or outside the work."
@@ -85,6 +138,9 @@ extension WorkCorpus {
 
             case .invalidDifficultWordThreshold:
                 "The difficult-word score threshold must be positive."
+
+            case let .invalidNumber(place):
+                "The work's \(place) is not a whole number that fits in 32 bits."
 
             case let .invalidLanguage(value):
                 "The work names its language as \"\(Self.shown(value))\", "
@@ -114,21 +170,38 @@ extension WorkCorpus {
 
     /// Decodes an assembled book YAML document and validates the resulting work.
     ///
-    /// - Throws: `DecodingError` when the document is not a book; ``WorkShapeError``
-    ///   when a piece's cuts do not divide its lines, or the parts, free pieces,
-    ///   thresholds or language are not shaped as a work's must be;
+    /// - Throws: `DecodingError` when the document is not YAML, or a field is missing
+    ///   or is not text where text belongs; ``WorkShapeError`` when a number is not a
+    ///   YAML integer within 32 bits, a piece's cuts do not divide its lines, or the
+    ///   parts, free pieces, thresholds or language are not shaped as a work's must be;
     ///   ``CorpusError`` when the pieces are not numbered from one in order.
     public static func decodeWorkFromBook(_ yaml: String) throws -> Work {
-        let work: Work
+        let work = try decoding { try YAMLDecoder().decode(Work.self, from: yaml) }
+        try validate(work.pieces)
+        try validateConfiguration(work)
+        return work
+    }
+
+    static func decoding<T>(_ decode: () throws -> T) throws -> T {
         do {
-            work = try YAMLDecoder().decode(Work.self, from: yaml)
+            return try decode()
         } catch DecodingError.dataCorrupted(let context) {
             if let shape = context.underlyingError as? WorkShapeError { throw shape }
             throw DecodingError.dataCorrupted(context)
         }
-        try validate(work.pieces)
-        try validateConfiguration(work)
-        return work
+    }
+
+    static func place(_ path: [CodingKey]) -> String {
+        path.enumerated().map { index, key in
+            if let position = key.intValue, key.stringValue.hasPrefix("Index ") {
+                return "[\(position)]"
+            }
+            return index == 0 ? key.stringValue : ".\(key.stringValue)"
+        }.joined()
+    }
+
+    static func fitsIn32Bits(_ number: Int) -> Bool {
+        (Int(Int32.min)...Int(Int32.max)).contains(number)
     }
 
     static func validateConfiguration(_ work: Work) throws {
@@ -136,6 +209,9 @@ extension WorkCorpus {
         for part in work.parts {
             guard part.first == next, part.last >= part.first else {
                 throw WorkShapeError.partsDoNotCoverTheWork
+            }
+            guard part.last <= work.pieces.count else {
+                throw WorkShapeError.partOutOfRange(first: part.first, last: part.last)
             }
             next = part.last + 1
         }
@@ -155,6 +231,9 @@ extension WorkCorpus {
             scale.mostBelow <= 1
         else { throw WorkShapeError.invalidStageFieldScale }
 
+        guard fitsIn32Bits(work.difficultWords.scoreThreshold) else {
+            throw WorkShapeError.invalidNumber(place: "difficult_words.score_threshold")
+        }
         guard work.difficultWords.scoreThreshold > 0 else {
             throw WorkShapeError.invalidDifficultWordThreshold
         }
@@ -193,13 +272,13 @@ extension WorkCorpus {
             guard stage != .line else {
                 throw WorkShapeError.cutsForLineStage(piece: piece)
             }
+            guard sizes.allSatisfy(fitsIn32Bits) else {
+                throw WorkShapeError.invalidNumber(place: "piece \(piece) \(label) cut")
+            }
             if let empty = sizes.first(where: { $0 <= 0 }) {
                 throw WorkShapeError.emptyCut(piece: piece, stage: label, size: empty)
             }
-            let cut = sizes.reduce(0) { total, size in
-                let (sum, overflow) = total.addingReportingOverflow(size)
-                return overflow ? Int.max : sum
-            }
+            let cut = min(sizes.reduce(0, +), Int(Int32.max))
             guard cut == lines else {
                 throw WorkShapeError.cutsDoNotCoverThePiece(
                     piece: piece,

@@ -50,8 +50,8 @@ struct WorkTests {
     @Test("parts have to cover the whole work")
     func refusesGapBetweenParts() throws {
         let parts = [
-            Part(title: "First", summary: "", first: 1, last: 10),
-            Part(title: "Second", summary: "", first: 12, last: 20)
+            try Part(title: "First", summary: "", first: 1, last: 10),
+            try Part(title: "Second", summary: "", first: 12, last: 20)
         ]
         let work = try work(parts: parts)
 
@@ -155,23 +155,81 @@ struct WorkTests {
         #expect(try WorkCorpus.decodeWorkFromBook(book).pieces[0].cutSizes == [:])
     }
 
-    @Test("a cut too large to count is refused naming the piece and the stage")
-    func bookWithHugeCut() throws {
+    @Test(
+        "a book number that is not a YAML integer within 32 bits is refused, naming the field",
+        arguments: [
+            (
+                "    lines: [The first line.]\n",
+                "    lines: [The first line.]\n    cuts:\n      block: [2147483648]\n",
+                "pieces[0].cuts.block[0]"
+            ),
+            (
+                "    lines: [The first line.]\n",
+                "    lines: [The first line.]\n    cuts:\n      block: [99999999999999999999]\n",
+                "pieces[0].cuts.block[0]"
+            ),
+            (
+                "    lines: [The first line.]\n",
+                "    lines: [The first line.]\n    cuts:\n      block: ['1']\n",
+                "pieces[0].cuts.block[0]"
+            ),
+            (
+                "    lines: [The first line.]\n",
+                "    lines: [The first line.]\n    cuts:\n      block: [1.0]\n",
+                "pieces[0].cuts.block[0]"
+            ),
+            (
+                "    lines: [The first line.]\n",
+                "    lines: [The first line.]\n    cuts:\n      block: [true]\n",
+                "pieces[0].cuts.block[0]"
+            ),
+            ("  - number: 1\n", "  - number: '1'\n", "pieces[0].number"),
+            ("    last: 1\n", "    last: '1'\n", "parts[0].last"),
+            ("free: [1]\n", "free: [2147483648]\n", "free[0]"),
+            (
+                "  score_threshold: 3\n",
+                "  score_threshold: 3.5\n",
+                "difficult_words.score_threshold"
+            )
+        ]
+    )
+    func bookWithInvalidNumber(written: String, replaced: String, place: String) throws {
         let book = try fixture("book-with-listening").replacingOccurrences(
-            of: "    lines: [The first line.]\n",
-            with: "    lines: [The first line.]\n    cuts:\n      block: [99999999999999999999]\n"
+            of: written,
+            with: replaced
         )
 
         #expect(book != (try fixture("book-with-listening")))
-        #expect(
-            throws: WorkCorpus.WorkShapeError.cutsDoNotCoverThePiece(
-                piece: 1,
-                stage: "block",
-                cut: Int.max,
-                lines: 1
-            )
-        ) {
+        #expect(throws: WorkCorpus.WorkShapeError.invalidNumber(place: place)) {
             try WorkCorpus.decodeWorkFromBook(book)
+        }
+    }
+
+    @Test("what is wrong with a number is said naming the field")
+    func numberErrorNamesTheField() {
+        #expect(
+            WorkCorpus.WorkShapeError.invalidNumber(place: "pieces[0].number").errorDescription
+                == "The work's pieces[0].number is not a whole number that fits in 32 bits."
+        )
+    }
+
+    @Test("a part that runs past the last piece is refused rather than overflowing")
+    func refusesPartPastTheWork() throws {
+        let last = Int(Int32.max)
+        let work = try work(parts: [Part(title: "All", summary: "", first: 1, last: last)])
+
+        #expect(throws: WorkCorpus.WorkShapeError.partOutOfRange(first: 1, last: last)) {
+            try WorkCorpus.validateConfiguration(work)
+        }
+    }
+
+    @Test("a part that ends before it starts, or starts before piece one, cannot be made")
+    func refusesBackwardPart() {
+        #expect(throws: WorkCorpus.WorkShapeError.partOutOfRange(first: 3, last: 2)) {
+            try Part(title: "Back", summary: "", first: 3, last: 2)
+        }
+        #expect(throws: WorkCorpus.WorkShapeError.partOutOfRange(first: 0, last: 2)) {
+            try Part(title: "Early", summary: "", first: 0, last: 2)
         }
     }
 
@@ -187,7 +245,8 @@ struct WorkTests {
         return Work(
             language: language,
             pieces: pieces,
-            parts: parts ?? [Part(title: "The work", summary: "", first: 1, last: pieces.count)],
+            parts: try parts
+                ?? [Part(title: "The work", summary: "", first: 1, last: pieces.count)],
             free: free,
             stageField: StageFieldScale(untouchedBelow: 0.001, begunBelow: 0.5, mostBelow: 1),
             difficultWords: DifficultWordsConfiguration(scoreThreshold: threshold)

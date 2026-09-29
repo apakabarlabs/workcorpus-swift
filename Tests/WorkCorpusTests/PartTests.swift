@@ -4,21 +4,25 @@ import Testing
 @testable import WorkCorpus
 
 struct PartTests {
-    private let parts = [
-        Part(
-            title: "The Procreation Sonnets",
-            summary: "Marry, and let your beauty outlive you.",
-            first: 1,
-            last: 17,
-            short: "The Procreation"
-        ),
-        Part(
-            title: "The Fair Youth",
-            summary: "Praise, and the verse that outlasts what it praises.",
-            first: 18,
-            last: 77
-        )
-    ]
+    private let parts: [Part]
+
+    init() throws {
+        parts = [
+            try Part(
+                title: "The Procreation Sonnets",
+                summary: "Marry, and let your beauty outlive you.",
+                first: 1,
+                last: 17,
+                short: "The Procreation"
+            ),
+            try Part(
+                title: "The Fair Youth",
+                summary: "Praise, and the verse that outlasts what it praises.",
+                first: 18,
+                last: 77
+            )
+        ]
+    }
 
     @Test("a part carries its range and the pieces inside it")
     func partHoldsItsPieces() {

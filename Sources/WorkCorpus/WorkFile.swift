@@ -13,7 +13,7 @@ struct WorkReading: Decodable {
     let untouchedBelow: Double
     let begunBelow: Double
     let mostBelow: Double
-    let difficultWordScore: Int
+    let difficultWordScore: WholeNumber
     let free: [String]
 
     private enum CodingKeys: String, CodingKey {
@@ -37,7 +37,7 @@ struct WorkPiece: Decodable {
     let id: String
     let title: String
     let lines: [String]
-    let cuts: [String: [CutSize]]?
+    let cuts: [String: [WholeNumber]]?
 }
 
 extension WorkCorpus {
@@ -57,11 +57,13 @@ extension WorkCorpus {
 
     /// Decodes a nested work-file YAML document and validates the resulting work.
     ///
-    /// - Throws: `DecodingError` when the document is not a work file;
-    ///   ``WorkError`` when a piece or free-piece identifier is not a number;
-    ///   ``WorkShapeError`` when a piece's cuts do not divide its lines, or the parts,
-    ///   free pieces, thresholds or language are not shaped as a work's must be;
-    ///   ``CorpusError`` when the pieces are not numbered from one in order.
+    /// - Throws: `DecodingError` when the document is not YAML, or a field is missing or
+    ///   is not text where text belongs; ``WorkError`` when a piece or free-piece
+    ///   identifier is not a whole number within 32 bits; ``WorkShapeError`` when a
+    ///   number is not a YAML integer within 32 bits, a piece's cuts do not divide its
+    ///   lines, or the parts, free pieces, thresholds or language are not shaped as a
+    ///   work's must be; ``CorpusError`` when the pieces are not numbered from one in
+    ///   order.
     public static func decodeWork(_ yaml: String) throws -> Work {
         let work = try assembleWork(yaml)
         try validate(work.pieces)
@@ -70,11 +72,11 @@ extension WorkCorpus {
     }
 
     static func assembleWork(_ yaml: String) throws -> Work {
-        let work = try YAMLDecoder().decode(WorkFile.self, from: yaml)
+        let work = try decoding { try YAMLDecoder().decode(WorkFile.self, from: yaml) }
         var pieces: [HeldPiece] = []
         for part in parts(of: work.sections) {
             for piece in part.pieces ?? [] {
-                guard let number = Int(piece.id) else {
+                guard let number = Int32(piece.id).map(Int.init) else {
                     throw WorkError.pieceIsNotNumbered(piece.id)
                 }
                 pieces.append(
@@ -97,9 +99,11 @@ extension WorkCorpus {
                 untouchedBelow: work.reading.untouchedBelow,
                 begunBelow: work.reading.begunBelow,
                 mostBelow: work.reading.mostBelow,
-                difficultWordScore: work.reading.difficultWordScore,
+                difficultWordScore: work.reading.difficultWordScore.value,
                 free: try work.reading.free.map { number in
-                    guard let free = Int(number) else { throw WorkError.pieceIsNotNumbered(number) }
+                    guard let free = Int32(number).map(Int.init) else {
+                        throw WorkError.pieceIsNotNumbered(number)
+                    }
                     return free
                 }
             )

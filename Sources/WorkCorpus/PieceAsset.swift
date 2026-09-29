@@ -9,7 +9,8 @@ import Foundation
 ///
 /// Names are compared in Unicode normalization form C, so a stem and a name that spell
 /// the same letters with precomposed and combining marks still match. Only the ASCII
-/// digits `0` to `9` are read as the digits of a piece number.
+/// digits `0` to `9` are read as the digits of a piece number, and a number read from
+/// a name fits in 32 bits.
 public struct PieceAsset: Sendable {
     /// Work-specific prefix placed in every generated asset name.
     public let stem: String
@@ -62,7 +63,7 @@ public struct PieceAsset: Sendable {
         let prefix = Array("\(stem.precomposedStringWithCanonicalMapping)-".unicodeScalars)
         guard bare.starts(with: prefix) else { return nil }
         let digits = bare.dropFirst(prefix.count).prefix(while: Self.isDigit)
-        return Int(String(String.UnicodeScalarView(digits)))
+        return Int32(String(String.UnicodeScalarView(digits))).map(Int.init)
     }
 
     /// Extracts the voice suffix from an alignment filename.

@@ -24,13 +24,50 @@ public struct Part: Decodable, Identifiable, Sendable, Equatable {
     /// Reports whether a numbered piece belongs to the part.
     public func contains(piece: Int) -> Bool { pieces.contains(piece) }
 
+    private enum CodingKeys: String, CodingKey {
+        case title
+        case summary
+        case first
+        case last
+        case short
+    }
+
     /// Creates one consecutive part without validating it against a work.
-    public init(title: String, summary: String, first: Int, last: Int, short: String? = nil) {
+    ///
+    /// - Throws: ``WorkCorpus/WorkShapeError/partOutOfRange(first:last:)`` when the part
+    ///   does not start at piece one or later, ends before it starts, or does not fit in
+    ///   32 bits.
+    public init(
+        title: String,
+        summary: String,
+        first: Int,
+        last: Int,
+        short: String? = nil
+    ) throws {
+        guard first >= 1, last >= first, WorkCorpus.fitsIn32Bits(last) else {
+            throw WorkCorpus.WorkShapeError.partOutOfRange(first: first, last: last)
+        }
         self.title = title
         self.summary = summary
         self.first = first
         self.last = last
         self.short = short
+    }
+
+    /// Decodes a part.
+    ///
+    /// - Throws: `DecodingError` when a field is missing or is not text where text
+    ///   belongs; ``WorkCorpus/WorkShapeError`` naming the field when `first` or `last`
+    ///   is not a YAML integer within 32 bits, or when the part is not a range of pieces.
+    public init(from decoder: Decoder) throws {
+        let values = try decoder.container(keyedBy: CodingKeys.self)
+        try self.init(
+            title: try values.decode(String.self, forKey: .title),
+            summary: try values.decode(String.self, forKey: .summary),
+            first: try values.decode(WholeNumber.self, forKey: .first).value,
+            last: try values.decode(WholeNumber.self, forKey: .last).value,
+            short: try values.decodeIfPresent(String.self, forKey: .short)
+        )
     }
 }
 

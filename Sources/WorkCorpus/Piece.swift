@@ -35,13 +35,17 @@ public struct Piece: Decodable, Identifiable, Sendable, Equatable {
     /// the number of lines. The number is not validated against a work.
     ///
     /// - Throws: ``WorkCorpus/WorkShapeError`` naming the piece and the stage when
-    ///   the cuts do not divide the lines.
+    ///   the cuts do not divide the lines, or naming the piece when its number or a cut
+    ///   size does not fit in 32 bits.
     public init(
         number: Int,
         title: String,
         lines: [String],
         cutSizes: [String: [Int]] = [:]
     ) throws {
+        guard WorkCorpus.fitsIn32Bits(number) else {
+            throw WorkCorpus.WorkShapeError.invalidNumber(place: "piece \(number)")
+        }
         try WorkCorpus.validateCuts(piece: number, lines: lines.count, cutSizes: cutSizes)
         self.number = number
         self.title = title
@@ -52,14 +56,15 @@ public struct Piece: Decodable, Identifiable, Sendable, Equatable {
     /// Decodes a piece, treating an omitted or null `cuts` mapping as empty and refusing
     /// cuts that do not divide its lines.
     ///
-    /// - Throws: `DecodingError` when a field is missing or of the wrong kind;
-    ///   ``WorkCorpus/WorkShapeError`` naming the piece and the stage when the cuts do
-    ///   not divide the lines.
+    /// - Throws: `DecodingError` when a field is missing or is not text where text
+    ///   belongs; ``WorkCorpus/WorkShapeError`` naming the field when the number or a
+    ///   cut size is not a YAML integer within 32 bits, or naming the piece and the stage
+    ///   when the cuts do not divide the lines.
     public init(from decoder: Decoder) throws {
         let values = try decoder.container(keyedBy: CodingKeys.self)
-        let cuts = try values.decodeIfPresent([String: [CutSize]].self, forKey: .cutSizes)
+        let cuts = try values.decodeIfPresent([String: [WholeNumber]].self, forKey: .cutSizes)
         try self.init(
-            number: try values.decode(Int.self, forKey: .number),
+            number: try values.decode(WholeNumber.self, forKey: .number).value,
             title: try values.decode(String.self, forKey: .title),
             lines: try values.decode([String].self, forKey: .lines),
             cutSizes: cuts?.mapValues { $0.map(\.value) } ?? [:]
@@ -67,40 +72,16 @@ public struct Piece: Decodable, Identifiable, Sendable, Equatable {
     }
 }
 
-struct CutSize: Decodable {
+struct WholeNumber: Decodable {
     let value: Int
 
     init(from decoder: Decoder) throws {
-        let container = try decoder.singleValueContainer()
-        guard let text = try? container.decode(String.self) else {
-            value = try container.decode(Int.self)
-            return
+        do {
+            value = Int(try decoder.singleValueContainer().decode(Int32.self))
+        } catch {
+            let place = WorkCorpus.place(decoder.codingPath)
+            throw WorkCorpus.WorkShapeError.invalidNumber(place: place)
         }
-        guard let value = Self.saturated(text) else {
-            throw DecodingError.dataCorruptedError(
-                in: container,
-                debugDescription: "A cut size of \(text) is not a whole number of lines."
-            )
-        }
-        self.value = value
-    }
-
-    static func saturated(_ text: String) -> Int? {
-        var scalars = text.unicodeScalars[...]
-        let negative = scalars.first == "-"
-        if negative || scalars.first == "+" { scalars = scalars.dropFirst() }
-        guard !scalars.isEmpty, scalars.allSatisfy({ ("0"..."9").contains($0) }) else {
-            return nil
-        }
-        var magnitude = 0
-        for scalar in scalars {
-            let digit = Int(scalar.value - 0x30)
-            let (tens, tensOverflow) = magnitude.multipliedReportingOverflow(by: 10)
-            let (sum, sumOverflow) = tens.addingReportingOverflow(digit)
-            guard !tensOverflow, !sumOverflow else { return negative ? Int.min : Int.max }
-            magnitude = sum
-        }
-        return negative ? -magnitude : magnitude
     }
 }
 

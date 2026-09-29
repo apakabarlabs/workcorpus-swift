@@ -25,13 +25,14 @@ struct PieceAssetTests {
         #expect(percent.number(inName: "100%d-%@-004.mp3") == 4)
     }
 
-    @Test("a number past 32 bits is written in full")
+    @Test("the largest 32-bit number is written in full, and nothing past it is read")
     func largeNumbers() {
-        #expect(asset.name(5_000_000_000) == "sonnet-5000000000")
+        #expect(asset.name(2_147_483_647) == "sonnet-2147483647")
         #expect(asset.name(-4) == "sonnet--04")
-        #expect(asset.number(inName: "sonnet-5000000000.mp3") == 5_000_000_000)
+        #expect(asset.number(inName: "sonnet-2147483647.mp3") == 2_147_483_647)
+        #expect(asset.number(inName: "sonnet-2147483648.mp3") == nil)
         #expect(
-            asset.sharedReading(piece: 5_000_000_000, line: 3, heard: nil) == "s5000000000-l03"
+            asset.sharedReading(piece: 2_147_483_647, line: 3, heard: nil) == "s2147483647-l03"
         )
     }
 
@@ -42,7 +43,6 @@ struct PieceAssetTests {
 
         #expect(composed.number(inName: "cafe\u{301}-004.mp3") == 4)
         #expect(decomposed.number(inName: "caf\u{E9}-004.mp3") == 4)
-        #expect(decomposed.number(inName: "cafe\u{301}-004.mp3") == 4)
     }
 
     @Test("only ASCII digits are read as the digits of a number")

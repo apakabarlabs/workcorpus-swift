@@ -108,18 +108,41 @@ struct WorkFileTests {
         }
     }
 
-    @Test("a work file whose cut is too large to count is refused naming piece and stage")
-    func hugeCut() throws {
-        let huge = try workFixture().replacingOccurrences(
-            of: "          block:\n            - 2\n",
-            with: "          block:\n            - -99999999999999999999\n"
-        )
+    @Test(
+        "a work file number that is not a YAML integer within 32 bits is refused, naming the field",
+        arguments: [
+            (
+                "          block:\n            - 2\n",
+                "          block:\n            - -99999999999999999999\n",
+                "sections[0].pieces[0].cuts.block[0]"
+            ),
+            (
+                "          block:\n            - 2\n",
+                "          block:\n            - '2'\n",
+                "sections[0].pieces[0].cuts.block[0]"
+            ),
+            (
+                "  difficult_word_score: 3\n",
+                "  difficult_word_score: true\n",
+                "reading.difficult_word_score"
+            )
+        ]
+    )
+    func invalidNumber(written: String, replaced: String, place: String) throws {
+        let changed = try workFixture().replacingOccurrences(of: written, with: replaced)
 
-        #expect(huge != (try workFixture()))
-        #expect(
-            throws: WorkCorpus.WorkShapeError.emptyCut(piece: 1, stage: "block", size: Int.min)
-        ) {
-            try WorkCorpus.decodeWork(huge)
+        #expect(changed != (try workFixture()))
+        #expect(throws: WorkCorpus.WorkShapeError.invalidNumber(place: place)) {
+            try WorkCorpus.decodeWork(changed)
+        }
+    }
+
+    @Test("a piece identifier past 32 bits is refused as not a number")
+    func pieceIdPast32Bits() throws {
+        let past = try workFixture().replacingOccurrences(of: "id: '3'", with: "id: '2147483648'")
+
+        #expect(throws: WorkCorpus.WorkError.pieceIsNotNumbered("2147483648")) {
+            try WorkCorpus.assembleWork(past)
         }
     }
 

@@ -33,9 +33,26 @@
   piece and the stage. Until now sizes past the end of the piece were cut short,
   a shortfall was made up with one more cut of the remaining lines, and cuts for
   an unknown or the `line` stage were ignored. A stage the work says nothing
-  about, or a `cuts` of `null`, is still read line by line. A cut size too large
-  to count is taken as the largest integer, so it is refused naming the piece and
-  the stage rather than failing to parse.
+  about, or a `cuts` of `null`, is still read line by line.
+- Every number a work carries — piece numbers, cut sizes, part bounds, free
+  pieces, the difficult-word threshold, and piece identifiers in a work file — is
+  a YAML integer that fits in 32 bits, so that every port reads the same work.
+  A larger value, a quoted string, a float or a boolean where a number belongs is
+  refused with `WorkShapeError.invalidNumber`, naming the field, such as
+  `pieces[0].cuts.block[1]`; a piece identifier past 32 bits is
+  `WorkError.pieceIsNotNumbered`. `PieceAsset.number(inName:)` reads no number
+  past 32 bits.
+- `Part.init` throws `WorkShapeError.partOutOfRange` for a part that starts before
+  piece one, ends before it starts, or does not fit in 32 bits, and a work whose
+  part runs past its last piece is refused with the same error rather than
+  counting past it:
+
+  ```swift
+  // 0.4
+  let part = Part(title: "Sonnets", summary: "", first: 1, last: 154)
+  // 0.5
+  let part = try Part(title: "Sonnets", summary: "", first: 1, last: 154)
+  ```
 - `PieceAsset` compares a stem and a file name in Unicode normalization form C,
   and reads only the ASCII digits `0` to `9` as the digits of a piece number or
   of a numeric voice suffix. A name such as `s-12三` now reads as piece 12, and
@@ -54,8 +71,8 @@
 
 - `PieceAsset.name` writes the stem as it is. It was used as a format string, so
   a stem containing `%` produced a wrong name.
-- `PieceAsset.name` and `sharedReading` write piece numbers past 32 bits in full.
-  They were formatted with `%d`, which reads only 32 bits of the number.
+- `PieceAsset.name` and `sharedReading` pad numbers themselves rather than through
+  `%d`, which reads only 32 bits of an `Int`.
 
 ## 0.4.0
 

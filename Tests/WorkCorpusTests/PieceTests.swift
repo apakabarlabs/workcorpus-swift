@@ -62,11 +62,23 @@ struct PieceTests {
             throws: WorkCorpus.WorkShapeError.cutsDoNotCoverThePiece(
                 piece: 1,
                 stage: "block",
-                cut: Int.max,
+                cut: Int(Int32.max),
                 lines: 14
             )
         ) {
-            try piece(cuts: ["block": [Int.max, 1]])
+            try piece(cuts: ["block": [Int(Int32.max), 1]])
+        }
+    }
+
+    @Test("a number or cut size held past 32 bits is refused, naming the piece")
+    func refusesNumbersPast32Bits() {
+        let past = Int(Int32.max) + 1
+
+        #expect(throws: WorkCorpus.WorkShapeError.invalidNumber(place: "piece \(past)")) {
+            try Piece(number: past, title: "Far", lines: ["A line of verse,"])
+        }
+        #expect(throws: WorkCorpus.WorkShapeError.invalidNumber(place: "piece 1 block cut")) {
+            try piece(cuts: ["block": [past]])
         }
     }
 
