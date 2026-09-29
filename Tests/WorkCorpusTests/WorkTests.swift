@@ -60,15 +60,112 @@ struct WorkTests {
         }
     }
 
+    @Test("a book carries the language it names")
+    func bookLanguage() throws {
+        let book = try fixture("book-with-listening")
+
+        #expect(try WorkCorpus.decodeWorkFromBook(book).language == "eng")
+    }
+
+    @Test("a book that does not name its language is refused, and says so")
+    func bookWithoutLanguage() throws {
+        let book = try fixture("book-with-listening").replacingOccurrences(
+            of: "language: eng\n",
+            with: ""
+        )
+
+        #expect(book != (try fixture("book-with-listening")))
+        let error = #expect(throws: DecodingError.self) {
+            try WorkCorpus.decodeWorkFromBook(book)
+        }
+        #expect(String(describing: error).contains("language"))
+    }
+
+    @Test("a work has to name its language")
+    func refusesBlankLanguage() {
+        #expect(throws: WorkCorpus.WorkShapeError.unnamedLanguage) {
+            try WorkCorpus.validateConfiguration(work(language: ""))
+        }
+    }
+
+    @Test("cuts that cover part of a piece leave the rest as one more cut")
+    func acceptsCutsShortOfThePiece() throws {
+        try WorkCorpus.validateConfiguration(work(cuts: ["block": [4, 4]]))
+    }
+
+    @Test("a cut of no lines is refused, naming the piece and the stage")
+    func refusesEmptyCut() {
+        #expect(throws: WorkCorpus.WorkShapeError.emptyCut(piece: 1, stage: "block", size: 0)) {
+            try WorkCorpus.validateConfiguration(work(cuts: ["block": [4, 0, 4]]))
+        }
+        #expect(throws: WorkCorpus.WorkShapeError.emptyCut(piece: 1, stage: "block", size: -2)) {
+            try WorkCorpus.validateConfiguration(work(cuts: ["block": [-2, 16]]))
+        }
+    }
+
+    @Test("cuts longer than the piece are refused rather than cut short")
+    func refusesOverrunningCuts() {
+        #expect(
+            throws: WorkCorpus.WorkShapeError.cutsOverrunThePiece(
+                piece: 1,
+                stage: "block",
+                cut: 16,
+                lines: 14
+            )
+        ) {
+            try WorkCorpus.validateConfiguration(work(cuts: ["block": [4, 4, 4, 4]]))
+        }
+    }
+
+    @Test("cuts for a stage there is no such thing as are refused rather than ignored")
+    func refusesUnknownStage() {
+        #expect(throws: WorkCorpus.WorkShapeError.cutsForUnknownStage(piece: 1, stage: "stanza")) {
+            try WorkCorpus.validateConfiguration(work(cuts: ["stanza": [7, 7]]))
+        }
+    }
+
+    @Test("cuts for the line stage are refused, since that stage is never cut")
+    func refusesLineStageCuts() {
+        #expect(throws: WorkCorpus.WorkShapeError.cutsForLineStage(piece: 1)) {
+            try WorkCorpus.validateConfiguration(work(cuts: ["line": [2, 2]]))
+        }
+    }
+
+    @Test("what is wrong with a cut is said in words that name the piece and the stage")
+    func cutErrorsNameThePlace() {
+        let error = WorkCorpus.WorkShapeError.cutsOverrunThePiece(
+            piece: 99,
+            stage: "block",
+            cut: 16,
+            lines: 15
+        )
+
+        #expect(
+            error.errorDescription
+                == "Piece 99 is cut at the block stage into 16 lines, but it has 15."
+        )
+    }
+
     private func work(
+        language: String = "eng",
         threshold: Int = 3,
         parts: [Part]? = nil,
-        free: [Int] = [1]
+        free: [Int] = [1],
+        cuts: [String: [Int]] = [:]
     ) -> Work {
-        let pieces = (1...20).map { number in
-            Piece(number: number, title: "Piece \(number)", lines: ["A line of verse,"])
-        }
+        let first = Piece(
+            number: 1,
+            title: "Piece 1",
+            lines: Array(repeating: "A line of verse,", count: 14),
+            cutSizes: cuts
+        )
+        let pieces =
+            [first]
+            + (2...20).map { number in
+                Piece(number: number, title: "Piece \(number)", lines: ["A line of verse,"])
+            }
         return Work(
+            language: language,
             pieces: pieces,
             parts: parts ?? [Part(title: "The work", summary: "", first: 1, last: pieces.count)],
             free: free,

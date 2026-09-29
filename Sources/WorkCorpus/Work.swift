@@ -7,6 +7,11 @@ import Yams
 /// ``WorkCorpus/decodeWorkFromBook(_:)`` to validate the complete work before use.
 /// Decoding this type directly does not validate relationships between its fields.
 public struct Work: Decodable, Sendable {
+    /// Language the work is written in, as the work names it.
+    ///
+    /// It arrives with the work rather than being assumed, because the same reading
+    /// mechanics carry works in other languages, each held to its own alphabet.
+    public let language: String
     /// Reading pieces, expected to be numbered from one and ordered by number.
     public let pieces: [Piece]
     /// Parts, expected to cover the pieces consecutively and exactly once.
@@ -19,6 +24,7 @@ public struct Work: Decodable, Sendable {
     public let difficultWords: DifficultWordsConfiguration
 
     private enum CodingKeys: String, CodingKey {
+        case language
         case pieces
         case parts
         case free
@@ -48,6 +54,11 @@ extension WorkCorpus {
         case invalidFreePieces
         case invalidStageFieldScale
         case invalidDifficultWordThreshold
+        case unnamedLanguage
+        case cutsForUnknownStage(piece: Int, stage: String)
+        case cutsForLineStage(piece: Int)
+        case emptyCut(piece: Int, stage: String, size: Int)
+        case cutsOverrunThePiece(piece: Int, stage: String, cut: Int, lines: Int)
 
         var errorDescription: String? {
             switch self {
@@ -62,6 +73,21 @@ extension WorkCorpus {
 
             case .invalidDifficultWordThreshold:
                 "The difficult-word score threshold must be positive."
+
+            case .unnamedLanguage:
+                "The work does not name the language it is written in."
+
+            case let .cutsForUnknownStage(piece, stage):
+                "Piece \(piece) is cut for a stage called \(stage), which is not a reading stage."
+
+            case let .cutsForLineStage(piece):
+                "Piece \(piece) is cut for the line stage, which is read one line at a time."
+
+            case let .emptyCut(piece, stage, size):
+                "Piece \(piece) has a \(stage) cut of \(size) lines; a cut holds at least one."
+
+            case let .cutsOverrunThePiece(piece, stage, cut, lines):
+                "Piece \(piece) is cut at the \(stage) stage into \(cut) lines, but it has \(lines)."
             }
         }
     }
@@ -100,6 +126,37 @@ extension WorkCorpus {
 
         guard work.difficultWords.scoreThreshold > 0 else {
             throw WorkShapeError.invalidDifficultWordThreshold
+        }
+
+        guard !work.language.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            throw WorkShapeError.unnamedLanguage
+        }
+
+        for piece in work.pieces {
+            try validateCuts(of: piece)
+        }
+    }
+
+    private static func validateCuts(of piece: Piece) throws {
+        for (label, sizes) in piece.cutSizes.sorted(by: { $0.key < $1.key }) {
+            guard let stage = ReadingStage.allCases.first(where: { $0.label == label }) else {
+                throw WorkShapeError.cutsForUnknownStage(piece: piece.number, stage: label)
+            }
+            guard stage != .line else {
+                throw WorkShapeError.cutsForLineStage(piece: piece.number)
+            }
+            if let empty = sizes.first(where: { $0 <= 0 }) {
+                throw WorkShapeError.emptyCut(piece: piece.number, stage: label, size: empty)
+            }
+            let cut = sizes.reduce(0, +)
+            guard cut <= piece.lines.count else {
+                throw WorkShapeError.cutsOverrunThePiece(
+                    piece: piece.number,
+                    stage: label,
+                    cut: cut,
+                    lines: piece.lines.count
+                )
+            }
         }
     }
 }

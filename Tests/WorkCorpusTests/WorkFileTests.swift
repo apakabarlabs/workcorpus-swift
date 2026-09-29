@@ -46,6 +46,48 @@ struct WorkFileTests {
         #expect(read.difficultWords.scoreThreshold == 3)
     }
 
+    @Test("the language comes off the work file as the work names it")
+    func language() throws {
+        #expect(try WorkCorpus.decodeWork(workFixture()).language == "eng")
+
+        let serbian = try workFixture().replacingOccurrences(
+            of: "language: eng\n",
+            with: "language: srp\n"
+        )
+        #expect(try WorkCorpus.decodeWork(serbian).language == "srp")
+    }
+
+    @Test("a work file that does not name its language is refused, and says so")
+    func withoutLanguage() throws {
+        let unnamed = try workFixture().replacingOccurrences(of: "language: eng\n", with: "")
+
+        #expect(unnamed != (try workFixture()))
+        let error = #expect(throws: DecodingError.self) {
+            try WorkCorpus.decodeWork(unnamed)
+        }
+        #expect(String(describing: error).contains("language"))
+    }
+
+    @Test("a work file whose cuts overrun a piece is refused")
+    func overrunningCuts() throws {
+        let overrun = try workFixture().replacingOccurrences(
+            of: "          block:\n            - 2\n",
+            with: "          block:\n            - 3\n"
+        )
+
+        #expect(overrun != (try workFixture()))
+        #expect(
+            throws: WorkCorpus.WorkShapeError.cutsOverrunThePiece(
+                piece: 1,
+                stage: "block",
+                cut: 3,
+                lines: 2
+            )
+        ) {
+            try WorkCorpus.decodeWork(overrun)
+        }
+    }
+
     @Test(
         "a work file that still names a shortest attempt is read, whatever it says",
         arguments: ["0.2", "0", "200"]

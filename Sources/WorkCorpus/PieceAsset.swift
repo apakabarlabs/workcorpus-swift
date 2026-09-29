@@ -17,7 +17,7 @@ public struct PieceAsset: Sendable {
 
     /// Returns the zero-padded base name of a numbered piece.
     public func name(_ piece: Int) -> String {
-        String(format: "\(stem)-%03d", piece)
+        "\(stem)-" + String(format: "%03d", piece)
     }
 
     /// Returns the relative MP3 path for a piece and narration voice.

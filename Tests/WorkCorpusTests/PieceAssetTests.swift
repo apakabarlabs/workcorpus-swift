@@ -17,6 +17,14 @@ struct PieceAssetTests {
         #expect(PieceAsset(stem: "onegin").number(inName: "sonnet-004.mp3") == nil)
     }
 
+    @Test("the stem is written as it is, even where it looks like a format")
+    func stemIsNotAFormat() {
+        let percent = PieceAsset(stem: "100%d-%@")
+
+        #expect(percent.name(4) == "100%d-%@-004")
+        #expect(percent.number(inName: "100%d-%@-004.mp3") == 4)
+    }
+
     @Test("a number is read from a bare name, never from a path")
     func numberInName() {
         #expect(asset.number(inName: "sonnet-004.mp3") == 4)

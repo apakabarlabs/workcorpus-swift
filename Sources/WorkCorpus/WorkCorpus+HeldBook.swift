@@ -76,16 +76,26 @@ extension WorkCorpus {
     }
 
     /// Assembles held values into a work and validates its complete shape.
-    public static func work(pieces: [HeldPiece], reading: HeldReading) throws -> Work {
-        let work = assemble(pieces: pieces, reading: reading)
+    ///
+    /// - Parameters:
+    ///   - language: The language the work names itself as written in.
+    ///   - pieces: The pieces in reading order, each with the part it is filed under.
+    ///   - reading: What a reading of the work is held to.
+    public static func work(
+        language: String,
+        pieces: [HeldPiece],
+        reading: HeldReading
+    ) throws -> Work {
+        let work = assemble(language: language, pieces: pieces, reading: reading)
         try validate(work.pieces)
         try validateConfiguration(work)
         return work
     }
 
-    static func assemble(pieces: [HeldPiece], reading: HeldReading) -> Work {
+    static func assemble(language: String, pieces: [HeldPiece], reading: HeldReading) -> Work {
         let parts = assembleParts(pieces: pieces)
         return Work(
+            language: language,
             pieces: pieces.map(makePiece),
             parts: parts.map(makePart),
             free: reading.free,

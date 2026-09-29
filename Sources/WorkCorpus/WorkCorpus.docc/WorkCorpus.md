@@ -7,8 +7,10 @@ assets, and progress a reading application needs.
 
 Use ``WorkCorpus/decodeWork(_:)`` for the nested work-file format or
 ``WorkCorpus/decodeWorkFromBook(_:)`` for the assembled book format. Both entry
-points validate numbering, parts, free pieces, and progress thresholds before
-returning a ``Work``.
+points validate numbering, parts, free pieces, progress thresholds, the language the
+work names, and the cuts each piece is taken in before returning a ``Work``. A cut
+of no lines, cuts longer than their piece, and cuts for a stage that is not a
+cut reading stage are refused with the piece and the stage named.
 
 ```swift
 let work = try WorkCorpus.decodeWork(yaml)
@@ -21,6 +23,7 @@ in one `reading` mapping:
 
 ```yaml
 slug: poems
+language: eng
 title: Poems
 reading:
   untouched_below: 0.001
@@ -40,6 +43,7 @@ sections:
 The assembled book format supplies the resulting pieces and parts directly:
 
 ```yaml
+language: eng
 pieces:
   - number: 1
     title: First poem

@@ -41,7 +41,7 @@ struct HeldBookTests {
 
     @Test("the pieces come out numbered and in the order they are held")
     func heldPieces() {
-        let work = WorkCorpus.assemble(pieces: pieces, reading: reading)
+        let work = WorkCorpus.assemble(language: "eng", pieces: pieces, reading: reading)
 
         #expect(work.pieces.map(\.number) == [1, 2, 3])
         #expect(work.pieces[1].lines == ["When forty winters shall besiege thy brow,"])
@@ -50,7 +50,7 @@ struct HeldBookTests {
 
     @Test("a part covers the pieces filed under it and keeps its two names")
     func parts() {
-        let work = WorkCorpus.assemble(pieces: pieces, reading: reading)
+        let work = WorkCorpus.assemble(language: "eng", pieces: pieces, reading: reading)
 
         #expect(work.parts.map(\.title) == ["The Procreation Sonnets", "The Fair Youth"])
         #expect(work.parts[0].shortTitle == "The Procreation")
@@ -61,7 +61,7 @@ struct HeldBookTests {
 
     @Test("the reading thresholds come off the reading it was given")
     func thresholds() {
-        let work = WorkCorpus.assemble(pieces: pieces, reading: reading)
+        let work = WorkCorpus.assemble(language: "eng", pieces: pieces, reading: reading)
 
         #expect(work.free == [1, 2])
         #expect(work.stageField.band(for: 0.0005) == .untouched)
@@ -82,7 +82,7 @@ struct HeldBookTests {
                 )
             ]
 
-        let work = WorkCorpus.assemble(pieces: returning, reading: reading)
+        let work = WorkCorpus.assemble(language: "eng", pieces: returning, reading: reading)
 
         #expect(work.parts.map(\.pieces) == [1...2, 3...3, 4...4])
     }
@@ -92,7 +92,21 @@ struct HeldBookTests {
         let outOfOrder = [pieces[1], pieces[0], pieces[2]]
 
         #expect(throws: WorkCorpus.CorpusError.outOfOrder(expected: 1, found: 2)) {
-            try WorkCorpus.work(pieces: outOfOrder, reading: reading)
+            try WorkCorpus.work(language: "eng", pieces: outOfOrder, reading: reading)
+        }
+    }
+
+    @Test("the language is the one the work was held with, whatever it is")
+    func language() throws {
+        let work = try WorkCorpus.work(language: "srp", pieces: pieces, reading: reading)
+
+        #expect(work.language == "srp")
+    }
+
+    @Test("a work held without naming its language is refused")
+    func unnamedLanguage() {
+        #expect(throws: WorkCorpus.WorkShapeError.unnamedLanguage) {
+            try WorkCorpus.work(language: " ", pieces: pieces, reading: reading)
         }
     }
 }

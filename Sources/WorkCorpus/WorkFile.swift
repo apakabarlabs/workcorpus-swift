@@ -3,6 +3,7 @@ import Yams
 
 struct WorkFile: Decodable, Sendable {
     let slug: String
+    let language: String
     let title: String
     let reading: WorkReading
     let sections: [WorkSection]
@@ -84,6 +85,7 @@ extension WorkCorpus {
             }
         }
         return assemble(
+            language: work.language,
             pieces: pieces,
             reading: HeldReading(
                 untouchedBelow: work.reading.untouchedBelow,
