@@ -243,9 +243,7 @@ extension WorkCorpus {
             for (index, item) in sequence.enumerated() {
                 try refuseReferences(in: item, at: "\(place)[\(index)]")
             }
-        case .alias:
-            throw WorkShapeError.yamlReference(place: place.isEmpty ? "top level" : place)
-        case .scalar:
+        default:
             break
         }
     }
