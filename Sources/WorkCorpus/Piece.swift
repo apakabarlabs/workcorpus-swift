@@ -79,12 +79,20 @@ struct WholeNumber: Decodable {
         let place = WorkCorpus.place(decoder.codingPath)
         let container = try decoder.singleValueContainer()
         let number: Int32
+        let negative: Bool
         do {
             number = try container.decode(Int32.self)
+            negative = try container.decode(Double.self).sign == .minus
         } catch {
             throw WorkCorpus.WorkShapeError.invalidNumber(place: place)
         }
-        if let written = try? container.decode(String.self), !Self.isPlainDecimal(written) {
+        let written: String?
+        do {
+            written = try container.decode(String.self)
+        } catch DecodingError.typeMismatch {
+            written = nil
+        }
+        guard written.map(Self.isPlainDecimal) ?? true, number != 0 || !negative else {
             throw WorkCorpus.WorkShapeError.invalidNumber(place: place)
         }
         value = Int(number)

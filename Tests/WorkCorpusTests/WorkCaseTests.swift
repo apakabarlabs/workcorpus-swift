@@ -24,11 +24,11 @@ struct WorkCase: Decodable, Sendable, CustomTestStringConvertible {
     }
 
     static func all() throws -> [Self] {
-        try YAMLDecoder().decode(WorkCases.self, from: fixture("work-cases")).cases
+        try WorkCases.shared().cases
     }
 
     func document() throws -> String {
-        let base = try fixture(source)
+        let base = source == "json-book" ? try WorkCases.shared().jsonBook : try fixture(source)
         guard let replace else { return base }
         #expect(
             base.components(separatedBy: replace).count == 2,
@@ -41,13 +41,31 @@ struct WorkCase: Decodable, Sendable, CustomTestStringConvertible {
         switch source {
         case "work": try WorkCorpus.decodeWork(document)
         case "book-with-listening": try WorkCorpus.decodeWorkFromBook(document)
+        case "json-book": try Self.decodeJSONBook(document)
         default: throw UnknownFixture(name: source)
         }
+    }
+
+    private static func decodeJSONBook(_ document: String) throws -> Work {
+        let work = try JSONDecoder().decode(Work.self, from: Data(document.utf8))
+        try WorkCorpus.validate(work.pieces)
+        try WorkCorpus.validateConfiguration(work)
+        return work
     }
 }
 
 private struct WorkCases: Decodable {
+    let jsonBook: String
     let cases: [WorkCase]
+
+    private enum CodingKeys: String, CodingKey {
+        case jsonBook = "json-book"
+        case cases
+    }
+
+    static func shared() throws -> Self {
+        try YAMLDecoder().decode(Self.self, from: fixture("work-cases"))
+    }
 }
 
 private struct UnknownFixture: Error, CustomStringConvertible {

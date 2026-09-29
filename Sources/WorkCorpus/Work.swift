@@ -13,6 +13,10 @@ import Yams
 /// prefixes and sexagesimal `1:30` are refused, so that every port reads a number the
 /// same way.
 ///
+/// Decoded from JSON, a number is a JSON number whose value is a whole number that fits
+/// in 32 bits, so `5` and `5.0` both read as 5. A string such as `"5"`, a boolean,
+/// null, a fraction, a value past 32 bits and `-0` are refused as in YAML.
+///
 /// A work is written out in full. A YAML anchor, an alias or a `<<` merge key, quoted
 /// or not, is refused with ``WorkCorpus/WorkShapeError/yamlReference(place:)``, since
 /// YAML readers do not resolve them alike.

@@ -46,6 +46,10 @@
   and one that is not, such as `'+3'`, `'03'` or `'-0'`, is refused with
   `WorkError.pieceIsNotNumbered`. `PieceAsset.number(inName:)` reads no number
   past 32 bits.
+- A work decoded from JSON through `Decodable` holds its numbers to their value:
+  a JSON number that is a whole number within 32 bits reads, so `5.0` reads as
+  5, while a string such as `"5"`, a boolean, null, a fraction, a value past 32
+  bits or `-0` is refused with `WorkShapeError.invalidNumber`, naming the field.
 - `Part.init` throws `WorkShapeError.partOutOfRange` for a part that starts before
   piece one, ends before it starts, or does not fit in 32 bits, and a work whose
   part runs past its last piece is refused with the same error rather than
