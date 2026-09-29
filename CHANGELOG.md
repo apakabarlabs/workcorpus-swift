@@ -101,6 +101,12 @@
   themselves; `Work` decoded with a caller's own `YAMLDecoder` leaves anchors,
   aliases and merges to Yams, while its numbers, fractions and texts are held to
   the same rules as far as the decoder shows how a value was written.
+- A value written with an explicit YAML tag — `!!str 3`, `!!int 3`, `!poem`, the
+  non-specific `!`, or a tag on a list or mapping — is refused with the new
+  `WorkShapeError.explicitTag`, naming the field, so that `score_threshold:
+  !!str 3` no longer reads as 3. Yams cannot tell `!!str` on a quoted value or on
+  a key from no tag at all, so those two alone are read as if untagged; the
+  Kotlin port refuses them too.
 - `PieceAsset` compares a stem and a file name in Unicode normalization form C,
   and reads only the ASCII digits `0` to `9` as the digits of a piece number or
   of a numeric voice suffix. A name such as `s-12三` now reads as piece 12, and
