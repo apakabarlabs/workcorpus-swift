@@ -18,6 +18,10 @@ import Yams
 /// null, a fraction, a value past 32 bits and `-0` are refused as in YAML. The value
 /// is taken exactly as written, so `5.000000000000000001` is a fraction.
 ///
+/// The stage field bounds are fractions held to the same one writing: in YAML, plain
+/// decimal digits with an optional `-` and fractional part, such as `0.001` or `1`,
+/// and never quoted, with `_`, an exponent or as sexagesimal; in JSON, a JSON number.
+///
 /// A work is written out in full. A YAML anchor, an alias or a `<<` merge key, quoted
 /// or not, is refused with ``WorkCorpus/WorkShapeError/yamlReference(place:)``, since
 /// YAML readers do not resolve them alike.
@@ -140,6 +144,10 @@ extension WorkCorpus {
         /// A field that holds text is null: written as `~`, `null` or left empty. Empty
         /// text is written as `""`.
         case nullText(place: String)
+        /// A field that holds a fraction holds something else: a quoted string, a
+        /// boolean, null, or in YAML a number written other than as plain decimal digits
+        /// with an optional fractional part, such as `0.5_0`, `.5`, `5e-1` or `1:00`.
+        case invalidFraction(place: String)
 
         /// Reader-facing description naming what is wrong and where.
         public var errorDescription: String? {
@@ -186,6 +194,9 @@ extension WorkCorpus {
             case let .nullText(place):
                 "The work's \(place) is null where text belongs; "
                     + "an empty text is written as \"\"."
+
+            case let .invalidFraction(place):
+                "The work's \(place) is not a decimal number written as plain digits."
             }
         }
 
@@ -201,7 +212,8 @@ extension WorkCorpus {
     ///
     /// - Throws: `DecodingError` when the document is not YAML, or a field is missing
     ///   or is not text where text belongs; ``WorkShapeError`` when a number is not a
-    ///   YAML integer within 32 bits, a text is null, a value is written with a YAML
+    ///   YAML integer within 32 bits, a fraction is not written in plain digits, a
+    ///   text is null, a value is written with a YAML
     ///   anchor, alias or merge key, a piece's cuts do not divide its lines, or the
     ///   parts, free pieces,
     ///   thresholds or language are not shaped as a work's must be; ``CorpusError``

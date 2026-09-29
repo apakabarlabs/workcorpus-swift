@@ -10,9 +10,9 @@ struct WorkFile: Decodable, Sendable {
 }
 
 struct WorkReading: Decodable {
-    let untouchedBelow: Double
-    let begunBelow: Double
-    let mostBelow: Double
+    let untouchedBelow: Fraction
+    let begunBelow: Fraction
+    let mostBelow: Fraction
     let difficultWordScore: WholeNumber
     let free: [Text]
 
@@ -61,7 +61,8 @@ extension WorkCorpus {
     /// - Throws: `DecodingError` when the document is not YAML, or a field is missing or
     ///   is not text where text belongs; ``WorkError`` when a piece or free-piece
     ///   identifier is not a whole number within 32 bits; ``WorkShapeError`` when a
-    ///   number is not a YAML integer within 32 bits, a text is null, a value is
+    ///   number is not a YAML integer within 32 bits, a fraction is not written in
+    ///   plain digits, a text is null, a value is
     ///   written with a YAML anchor, alias or merge key, a piece's cuts do not divide
     ///   its lines, or the parts, free pieces, thresholds or language are not shaped as
     ///   a work's must be; ``CorpusError`` when the pieces are not numbered from one in
@@ -95,9 +96,9 @@ extension WorkCorpus {
             language: work.language.value,
             pieces: pieces,
             reading: HeldReading(
-                untouchedBelow: work.reading.untouchedBelow,
-                begunBelow: work.reading.begunBelow,
-                mostBelow: work.reading.mostBelow,
+                untouchedBelow: work.reading.untouchedBelow.value,
+                begunBelow: work.reading.begunBelow.value,
+                mostBelow: work.reading.mostBelow.value,
                 difficultWordScore: work.reading.difficultWordScore.value,
                 free: try work.reading.free.map { try numbered($0.value) }
             )

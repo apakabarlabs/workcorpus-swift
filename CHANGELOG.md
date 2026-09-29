@@ -59,6 +59,12 @@
   text `~`, `null` or nothing. Empty text is written as `""`, as a blank line of
   a poem is. A null `short`, `summary` of a work-file section or `cuts` still
   reads as none.
+- The stage field bounds, `stage_field.*` in a book and `reading.*_below` in a
+  work file, follow the one writing numbers follow: in YAML plain decimal digits
+  with an optional `-` and fractional part, such as `0.001` or `1`; in JSON a
+  JSON number. A quoted value, a boolean, null, or in YAML `0.5_0`, `.5`, `5e-1`
+  or sexagesimal `1:00` is refused with the new
+  `WorkShapeError.invalidFraction`, naming the field.
 - `Part.init` throws `WorkShapeError.partOutOfRange` for a part that starts before
   piece one, ends before it starts, or does not fit in 32 bits, and a work whose
   part runs past its last piece is refused with the same error rather than

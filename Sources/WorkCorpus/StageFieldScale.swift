@@ -22,6 +22,18 @@ public struct StageFieldScale: Decodable, Sendable, Equatable {
         self.mostBelow = mostBelow
     }
 
+    /// Decodes a scale without validating the order of its bounds.
+    ///
+    /// - Throws: `DecodingError` when a bound is missing;
+    ///   ``WorkCorpus/WorkShapeError`` naming the bound when it is not a number written
+    ///   in plain decimal digits.
+    public init(from decoder: Decoder) throws {
+        let values = try decoder.container(keyedBy: CodingKeys.self)
+        untouchedBelow = try values.decode(Fraction.self, forKey: .untouchedBelow).value
+        begunBelow = try values.decode(Fraction.self, forKey: .begunBelow).value
+        mostBelow = try values.decode(Fraction.self, forKey: .mostBelow).value
+    }
+
     /// Returns the display band containing `fraction`.
     public func band(for fraction: Double) -> Band {
         switch fraction {

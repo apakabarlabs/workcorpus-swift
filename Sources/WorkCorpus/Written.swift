@@ -44,6 +44,32 @@ struct WholeNumber: Decodable {
     }
 }
 
+struct Fraction: Decodable {
+    let value: Double
+
+    init(from decoder: Decoder) throws {
+        let place = WorkCorpus.place(decoder.codingPath)
+        let container = try decoder.singleValueContainer()
+        let written: String?
+        do {
+            value = try container.decode(Double.self)
+            written = try writtenText(in: container)
+        } catch {
+            throw WorkCorpus.WorkShapeError.invalidFraction(place: place)
+        }
+        guard value.isFinite, written.map(Self.isPlainFraction) ?? true else {
+            throw WorkCorpus.WorkShapeError.invalidFraction(place: place)
+        }
+    }
+
+    private static func isPlainFraction(_ written: String) -> Bool {
+        let parts = written.split(separator: ".", maxSplits: 1, omittingEmptySubsequences: false)
+        guard WholeNumber.isPlainDecimal(String(parts[0])) || parts[0] == "-0" else { return false }
+        guard parts.count == 2 else { return true }
+        return !parts[1].isEmpty && parts[1].unicodeScalars.allSatisfy { ("0"..."9").contains($0) }
+    }
+}
+
 struct Text: Decodable {
     let value: String
 
