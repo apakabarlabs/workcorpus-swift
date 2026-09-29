@@ -84,7 +84,7 @@ extension WorkCorpus {
                 )
             }
         }
-        return assemble(
+        return try assemble(
             language: work.language,
             pieces: pieces,
             reading: HeldReading(

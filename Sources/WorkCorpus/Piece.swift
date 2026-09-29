@@ -28,21 +28,34 @@ public struct Piece: Decodable, Identifiable, Sendable, Equatable {
         case cutSizes = "cuts"
     }
 
-    /// Creates a piece without validating its number or cuts against a work.
-    public init(number: Int, title: String, lines: [String], cutSizes: [String: [Int]] = [:]) {
+    /// Creates a piece, refusing cuts that do not divide its lines.
+    ///
+    /// Each stage named in `cutSizes` has to be a reading stage other than
+    /// ``ReadingStage/line``, and its sizes have to be positive and add up to exactly
+    /// the number of lines. The number is not validated against a work.
+    public init(
+        number: Int,
+        title: String,
+        lines: [String],
+        cutSizes: [String: [Int]] = [:]
+    ) throws {
+        try WorkCorpus.validateCuts(piece: number, lines: lines.count, cutSizes: cutSizes)
         self.number = number
         self.title = title
         self.lines = lines
         self.cutSizes = cutSizes
     }
 
-    /// Decodes a piece, treating an omitted `cuts` mapping as empty.
+    /// Decodes a piece, treating an omitted `cuts` mapping as empty and refusing cuts
+    /// that do not divide its lines.
     public init(from decoder: Decoder) throws {
         let values = try decoder.container(keyedBy: CodingKeys.self)
-        number = try values.decode(Int.self, forKey: .number)
-        title = try values.decode(String.self, forKey: .title)
-        lines = try values.decode([String].self, forKey: .lines)
-        cutSizes = try values.decodeIfPresent([String: [Int]].self, forKey: .cutSizes) ?? [:]
+        try self.init(
+            number: try values.decode(Int.self, forKey: .number),
+            title: try values.decode(String.self, forKey: .title),
+            lines: try values.decode([String].self, forKey: .lines),
+            cutSizes: try values.decodeIfPresent([String: [Int]].self, forKey: .cutSizes) ?? [:]
+        )
     }
 }
 

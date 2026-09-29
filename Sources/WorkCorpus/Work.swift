@@ -94,7 +94,13 @@ extension WorkCorpus {
 
     /// Decodes an assembled book YAML document and validates the resulting work.
     public static func decodeWorkFromBook(_ yaml: String) throws -> Work {
-        let work = try YAMLDecoder().decode(Work.self, from: yaml)
+        let work: Work
+        do {
+            work = try YAMLDecoder().decode(Work.self, from: yaml)
+        } catch DecodingError.dataCorrupted(let context) {
+            if let shape = context.underlyingError as? WorkShapeError { throw shape }
+            throw DecodingError.dataCorrupted(context)
+        }
         try validate(work.pieces)
         try validateConfiguration(work)
         return work
@@ -131,33 +137,29 @@ extension WorkCorpus {
         guard !work.language.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             throw WorkShapeError.unnamedLanguage
         }
-
-        for piece in work.pieces {
-            try validateCuts(of: piece)
-        }
     }
 
-    private static func validateCuts(of piece: Piece) throws {
-        for (label, sizes) in piece.cutSizes.sorted(by: { $0.key < $1.key }) {
+    static func validateCuts(piece: Int, lines: Int, cutSizes: [String: [Int]]) throws {
+        for (label, sizes) in cutSizes.sorted(by: { $0.key < $1.key }) {
             guard let stage = ReadingStage.allCases.first(where: { $0.label == label }) else {
-                throw WorkShapeError.cutsForUnknownStage(piece: piece.number, stage: label)
+                throw WorkShapeError.cutsForUnknownStage(piece: piece, stage: label)
             }
             guard stage != .line else {
-                throw WorkShapeError.cutsForLineStage(piece: piece.number)
+                throw WorkShapeError.cutsForLineStage(piece: piece)
             }
             if let empty = sizes.first(where: { $0 <= 0 }) {
-                throw WorkShapeError.emptyCut(piece: piece.number, stage: label, size: empty)
+                throw WorkShapeError.emptyCut(piece: piece, stage: label, size: empty)
             }
             let cut = sizes.reduce(0) { total, size in
                 let (sum, overflow) = total.addingReportingOverflow(size)
                 return overflow ? Int.max : sum
             }
-            guard cut == piece.lines.count else {
+            guard cut == lines else {
                 throw WorkShapeError.cutsDoNotCoverThePiece(
-                    piece: piece.number,
+                    piece: piece,
                     stage: label,
                     cut: cut,
-                    lines: piece.lines.count
+                    lines: lines
                 )
             }
         }

@@ -31,17 +31,10 @@ extension Piece {
             return lines.indices.map { $0...$0 }
         }
 
-        var ranges: [ClosedRange<Int>] = []
         var start = 0
-        for size in sizes {
-            let end = min(start + size - 1, lines.count - 1)
-            guard start <= end else { break }
-            ranges.append(start...end)
-            start = end + 1
+        return sizes.map { size in
+            defer { start += size }
+            return start...(start + size - 1)
         }
-        if start <= lines.count - 1 {
-            ranges.append(start...(lines.count - 1))
-        }
-        return ranges
     }
 }

@@ -4,8 +4,12 @@ import Testing
 @testable import WorkCorpus
 
 struct ReadingStageTests {
-    private func piece(_ number: Int, lines count: Int, cuts: [String: [Int]] = [:]) -> Piece {
-        Piece(
+    private func piece(
+        _ number: Int,
+        lines count: Int,
+        cuts: [String: [Int]] = [:]
+    ) throws -> Piece {
+        try Piece(
             number: number,
             title: "Piece \(number)",
             lines: (1...count).map { "line \($0)" },
@@ -14,11 +18,11 @@ struct ReadingStageTests {
     }
 
     @Test("every stage covers the whole piece, in order, with nothing dropped")
-    func cutsCoverThePiece() {
+    func cutsCoverThePiece() throws {
         let pieces = [
-            piece(1, lines: 14, cuts: ["block": [4, 4, 4, 2]]),
-            piece(99, lines: 15, cuts: ["block": [5, 4, 4, 2]]),
-            piece(126, lines: 12, cuts: ["block": [4, 4, 4]])
+            try piece(1, lines: 14, cuts: ["block": [4, 4, 4, 2]]),
+            try piece(99, lines: 15, cuts: ["block": [5, 4, 4, 2]]),
+            try piece(126, lines: 12, cuts: ["block": [4, 4, 4]])
         ]
         for poem in pieces {
             for stage in ReadingStage.allCases {
@@ -33,34 +37,31 @@ struct ReadingStageTests {
     }
 
     @Test("a line is a cut of its own at the first stage")
-    func linesAreTheSmallestCut() {
-        let cuts = piece(1, lines: 14).cuts(for: .line)
+    func linesAreTheSmallestCut() throws {
+        let cuts = try piece(1, lines: 14).cuts(for: .line)
         #expect(cuts.count == 14)
         #expect(cuts.allSatisfy { $0.count == 1 })
     }
 
     @Test("a stage is cut the way the work says it is cut")
-    func theWorkSaysHowItIsCut() {
+    func theWorkSaysHowItIsCut() throws {
         #expect(
-            piece(1, lines: 14, cuts: ["block": [4, 4, 4, 2]]).cuts(for: .block).map(\.count) == [
-                4, 4, 4, 2
-            ]
+            try piece(1, lines: 14, cuts: ["block": [4, 4, 4, 2]]).cuts(for: .block).map(\.count)
+                == [4, 4, 4, 2]
         )
         #expect(
-            piece(99, lines: 15, cuts: ["block": [5, 4, 4, 2]]).cuts(for: .block).map(\.count) == [
-                5, 4, 4, 2
-            ]
+            try piece(99, lines: 15, cuts: ["block": [5, 4, 4, 2]]).cuts(for: .block).map(\.count)
+                == [5, 4, 4, 2]
         )
         #expect(
-            piece(126, lines: 12, cuts: ["block": [4, 4, 4]]).cuts(for: .block).map(\.count) == [
-                4, 4, 4
-            ]
+            try piece(126, lines: 12, cuts: ["block": [4, 4, 4]]).cuts(for: .block).map(\.count)
+                == [4, 4, 4]
         )
     }
 
     @Test("a stage the work says nothing about is read line by line")
-    func anUncutStageIsReadLineByLine() {
-        #expect(piece(1, lines: 14).cuts(for: .block).count == 14)
+    func anUncutStageIsReadLineByLine() throws {
+        #expect(try piece(1, lines: 14).cuts(for: .block).count == 14)
     }
 
     @Test("a work whose cuts leave lines past the last cut is refused, naming piece and stage")
@@ -95,10 +96,10 @@ struct ReadingStageTests {
     }
 
     @Test("both stages are offered, and the whole piece is in each")
-    func bothStagesCoverThePiece() {
+    func bothStagesCoverThePiece() throws {
         #expect(ReadingStage.allCases == [.line, .block])
         for stage in ReadingStage.allCases {
-            let cuts = piece(1, lines: 14, cuts: ["block": [4, 4, 4, 2]]).cuts(for: stage)
+            let cuts = try piece(1, lines: 14, cuts: ["block": [4, 4, 4, 2]]).cuts(for: stage)
             #expect(cuts.first?.lowerBound == 0)
             #expect(cuts.last?.upperBound == 13)
         }

@@ -20,14 +20,24 @@
   try WorkCorpus.work(language: work.language, pieces: pieces, reading: reading)
   ```
 - An assembled book needs a `language` key; one without it no longer decodes.
-- A work's `cuts` table is validated. The sizes a stage is cut into have to add
-  up to exactly the lines of the piece. A cut of zero or fewer lines, sizes that
-  add up to more or fewer lines than the piece has, cuts for a stage that does
-  not exist, and cuts for the `line` stage are refused, naming the piece and the
-  stage. Until now sizes past the end of the piece were cut short, a shortfall
-  was made up with one more cut of the remaining lines, and cuts for an unknown
-  or the `line` stage were ignored. A stage the work says nothing about is still
-  read line by line.
+- A piece's `cuts` table is validated when the piece is made, so no `Piece`
+  exists with cuts that do not divide its lines. The sizes a stage is cut into
+  have to add up to exactly the lines of the piece. A cut of zero or fewer lines,
+  sizes that add up to more or fewer lines than the piece has, cuts for a stage
+  that does not exist, and cuts for the `line` stage are refused, naming the
+  piece and the stage. Until now sizes past the end of the piece were cut short,
+  a shortfall was made up with one more cut of the remaining lines, and cuts for
+  an unknown or the `line` stage were ignored. A stage the work says nothing
+  about is still read line by line.
+- `Piece.init(number:title:lines:cutSizes:)` throws, since it is where the cuts
+  are refused. Calls need `try`:
+
+  ```swift
+  // 0.4
+  let piece = Piece(number: 1, title: "Sonnet 1", lines: lines)
+  // 0.5
+  let piece = try Piece(number: 1, title: "Sonnet 1", lines: lines)
+  ```
 
 ### Fixed
 

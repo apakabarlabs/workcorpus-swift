@@ -86,17 +86,21 @@ extension WorkCorpus {
         pieces: [HeldPiece],
         reading: HeldReading
     ) throws -> Work {
-        let work = assemble(language: language, pieces: pieces, reading: reading)
+        let work = try assemble(language: language, pieces: pieces, reading: reading)
         try validate(work.pieces)
         try validateConfiguration(work)
         return work
     }
 
-    static func assemble(language: String, pieces: [HeldPiece], reading: HeldReading) -> Work {
+    static func assemble(
+        language: String,
+        pieces: [HeldPiece],
+        reading: HeldReading
+    ) throws -> Work {
         let parts = assembleParts(pieces: pieces)
         return Work(
             language: language,
-            pieces: pieces.map(makePiece),
+            pieces: try pieces.map(makePiece),
             parts: parts.map(makePart),
             free: reading.free,
             stageField: StageFieldScale(
@@ -129,8 +133,8 @@ extension WorkCorpus {
         return parts
     }
 
-    private static func makePiece(_ piece: HeldPiece) -> Piece {
-        Piece(
+    private static func makePiece(_ piece: HeldPiece) throws -> Piece {
+        try Piece(
             number: piece.number,
             title: piece.title,
             lines: piece.lines,
