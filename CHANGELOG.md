@@ -13,29 +13,32 @@ a *work file*, sections holding pieces as an author writes them, as an assembled
 *book*, the flat form with `pieces`, `parts`, `stage_field` and `difficult_words`,
 or is built in code with `WorkCorpus.work` from values the app already holds.
 
-## 0.6.1
-
-### Fixed
-
-- 0.6.0 did not build against ReadAloudKit 0.3.0, whose `StageState(stored:)`
-  throws instead of stopping the app. WorkCorpus now requires ReadAloudKit 0.3.0
-  or later.
+## 0.7.0
 
 ### Changed
 
-- `PieceStanding(stored:)` throws `UnknownStageState` when a stored value for a
-  stage this release knows is not a stage state, so an app decides what to show
-  instead of stopping. Call it with `try`:
+- **Breaking:** WorkCorpus requires
+  [ReadAloudKit](https://github.com/apakabarlabs/readaloudkit-swift) 0.3.0 or
+  later; 0.6.0 did not build against it. An app on an older ReadAloudKit raises it
+  in `Package.swift`, for example `.package(url:
+  "https://github.com/apakabarlabs/readaloudkit-swift", from: "0.3.0")`.
+- **Breaking:** `PieceStanding(stored:)` throws. `PieceStanding` is how far a
+  reader has come through one piece at each stage, and `stored:` restores it from
+  the integers an app saved, one per stage (`0` untouched, `1` started, `2`
+  complete). A saved integer that is none of these, for a stage this release
+  knows (`line` or `block`), used to stop the app; now it throws ReadAloudKit's
+  `UnknownStageState`, whose `raw` is the integer read, and the app decides what
+  to show, for example the piece as untouched. Add `try`:
 
   ```swift
   // 0.6.0
-  let standing = PieceStanding(stored: row.stages)
-  // 0.6.1
-  let standing = try PieceStanding(stored: row.stages)
+  let standing = PieceStanding(stored: savedStages)
+  // 0.7.0
+  let standing = try PieceStanding(stored: savedStages)
   ```
 
-  A value stored for a stage this release does not know is dropped without being
-  read, as before.
+  An integer saved for a stage after those this release knows, written by a newer
+  build, is still dropped without being read.
 
 ## 0.6.0
 
