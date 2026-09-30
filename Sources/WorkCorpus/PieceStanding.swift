@@ -18,10 +18,12 @@ public struct PieceStanding: Equatable, Sendable {
     /// Restores raw states for the reading stages known to this release.
     ///
     /// Omitted stages are padded with `.untouched`; values beyond the known stages
-    /// are discarded.
-    /// - Precondition: Every value is a valid `StageState` raw value.
-    public init(stored: [Int]) {
-        self.init(stages: stored.map(StageState.init(stored:)))
+    /// are discarded unread.
+    /// - Throws: `UnknownStageState` when a value for a known stage is not a
+    ///   `StageState` raw value.
+    public init(stored: [Int]) throws {
+        let known = stored.prefix(ReadingStage.allCases.count)
+        self.init(stages: try known.map(StageState.init(stored:)))
     }
 
     /// Returns the state associated with a reading stage.

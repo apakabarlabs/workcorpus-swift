@@ -13,6 +13,30 @@ a *work file*, sections holding pieces as an author writes them, as an assembled
 *book*, the flat form with `pieces`, `parts`, `stage_field` and `difficult_words`,
 or is built in code with `WorkCorpus.work` from values the app already holds.
 
+## 0.6.1
+
+### Fixed
+
+- 0.6.0 did not build against ReadAloudKit 0.3.0, whose `StageState(stored:)`
+  throws instead of stopping the app. WorkCorpus now requires ReadAloudKit 0.3.0
+  or later.
+
+### Changed
+
+- `PieceStanding(stored:)` throws `UnknownStageState` when a stored value for a
+  stage this release knows is not a stage state, so an app decides what to show
+  instead of stopping. Call it with `try`:
+
+  ```swift
+  // 0.6.0
+  let standing = PieceStanding(stored: row.stages)
+  // 0.6.1
+  let standing = try PieceStanding(stored: row.stages)
+  ```
+
+  A value stored for a stage this release does not know is dropped without being
+  read, as before.
+
 ## 0.6.0
 
 ### Added

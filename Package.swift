@@ -8,7 +8,7 @@ let package = Package(
         .library(name: "WorkCorpus", targets: ["WorkCorpus"])
     ],
     dependencies: [
-        .package(url: "https://github.com/apakabarlabs/readaloudkit-swift", from: "0.1.0"),
+        .package(url: "https://github.com/apakabarlabs/readaloudkit-swift", from: "0.3.0"),
         .package(url: "https://github.com/jpsim/Yams.git", from: "6.1.0"),
         .package(url: "https://github.com/swiftlang/swift-docc-plugin", from: "1.3.0")
     ],

@@ -1,13 +1,13 @@
 {
-  "originHash" : "2e2380f9e06692e0ac05409472cdea762fbc0dec496b0b1915766402dc3bf78a",
+  "originHash" : "46a60dd0ee2c16f557166fbd8287d70a20e4977f6dd57f2464ed92b43765cabd",
   "pins" : [
     {
       "identity" : "readalign-swift",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apakabarlabs/readalign-swift",
       "state" : {
-        "revision" : "83d533402c897e7718ef55c36cbabb5e91201bcf",
-        "version" : "0.5.0"
+        "revision" : "bdc9f27e095ab115040b0aad918cfea838b23d2f",
+        "version" : "0.17.1"
       }
     },
     {
@@ -15,8 +15,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apakabarlabs/readaloudkit-swift",
       "state" : {
-        "revision" : "cdd3fefce782c04741ad1d21ee6f6259fda83e05",
-        "version" : "0.1.0"
+        "revision" : "87dce11b5224a52d1a22c37c6cbe4854b9bccd18",
+        "version" : "0.3.0"
       }
     },
     {
