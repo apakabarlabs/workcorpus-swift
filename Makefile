@@ -1,6 +1,11 @@
 .DEFAULT_GOAL := build
 
-.PHONY: build test test-build docs comments lint lint-fix format clean install install-tools
+.PHONY: build test test-build docs comments lint lint-fix format clean install install-tools sync-yaml
+
+sync-yaml:
+	mkdir -p ../workcorpus-kotlin/src/test/resources
+	rm -f ../workcorpus-kotlin/src/test/resources/*.yaml
+	cp Tests/WorkCorpusTests/Fixtures/*.yaml ../workcorpus-kotlin/src/test/resources/
 
 build: lint test-build test docs
 	swift build
