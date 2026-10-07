@@ -15,8 +15,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apakabarlabs/readaloudkit-swift",
       "state" : {
-        "revision" : "87dce11b5224a52d1a22c37c6cbe4854b9bccd18",
-        "version" : "0.3.0"
+        "revision" : "709b53ad31872df5409a88319215dac98d3879f6",
+        "version" : "0.4.0"
       }
     },
     {
