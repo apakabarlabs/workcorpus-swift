@@ -13,6 +13,29 @@ a *work file*, sections holding pieces as an author writes them, as an assembled
 *book*, the flat form with `pieces`, `parts`, `stage_field` and `difficult_words`,
 or is built in code with `WorkCorpus.work` from values the app already holds.
 
+## 0.8.0
+
+Nothing changes for a Swift caller: the API is the same and every work reads, or
+is refused, as in 0.7.0. The version follows workcorpus-kotlin 0.8.0, so that the
+two ports keep the same major and minor version for the same behaviour.
+
+### Added
+
+- Shared cases that every port is held to, pinning what this library already
+  does:
+  - A YAML work followed by a second document, such as one after `---`, is
+    refused with `DecodingError`, whatever the second document holds, even an
+    anchor; a problem in the work itself, such as an anchor, is still named
+    first, with `WorkShapeError.yamlReference`.
+  - A key written as YAML null, `null:` or `~:`, is read as that text. Beside a
+    book's or a piece's fields it is a key the work does not know and is
+    skipped; among the `elisions` it is a spelling like any other and is kept,
+    so `null: [none]` gives `elisions["null"] == ["none"]`.
+- A book that starts with a byte order mark (U+FEFF) is refused with
+  `DecodingError`, as before. No shared case pins it: the shared cases are
+  themselves read with Yams, which drops U+FEFF from the text of a case, so a
+  case cannot hand this library a document that starts with one.
+
 ## 0.7.0
 
 ### Changed
