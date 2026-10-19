@@ -32,9 +32,7 @@ two ports keep the same major and minor version for the same behaviour.
     skipped; among the `elisions` it is a spelling like any other and is kept,
     so `null: [none]` gives `elisions["null"] == ["none"]`.
 - A book that starts with a byte order mark (U+FEFF) is refused with
-  `DecodingError`, as before. No shared case pins it: the shared cases are
-  themselves read with Yams, which drops U+FEFF from the text of a case, so a
-  case cannot hand this library a document that starts with one.
+  `DecodingError`, as before.
 
 ## 0.7.0
 
